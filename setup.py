@@ -1,0 +1,1 @@
+import setuptools as s;s.setup()
