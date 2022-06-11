@@ -412,7 +412,7 @@ class Fr(Structure):
     def __ne__(self, rhs):
         return g_lib.mclBnFr_isEqual(self.d, rhs.d) == 0
 
-class GT2(Structure):
+class Fp6Array(Structure):
     # _fields_ = [("d", 2 * mclBnGT_bytes)]  # I think Q_coeff precomputed G2 pairing may be made of two mclBnGT types
     # _fields_ = [("d", mclBnG2_bytes)]
     # _fields_ = [("d", c_uint64 * 1680)]
@@ -896,7 +896,7 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
         return result
 
     def precompute(self):# -> void
-        result = GT2()
+        result = Fp6Array()
         z = result.d
         x = self.d
         libretval = g_lib.mclBn_precomputeG2(z, x)
