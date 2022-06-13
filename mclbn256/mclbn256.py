@@ -330,8 +330,11 @@ class lib:
 #
 # Load DLL or DyLib from the wheel (or disk?)
 #
-lib = cdll.LoadLibrary(lib_path)
-if lib.mclBn_init(mclBn_CurveFp254BNb, MCLBN_COMPILED_TIME_VAR): print("Failed to load MCl's BN254 binary.")
+def __init_lib():
+    global lib
+    lib = cdll.LoadLibrary(lib_path)
+    if lib.mclBn_init(mclBn_CurveFp254BNb, MCLBN_COMPILED_TIME_VAR): print("Failed to load MCl's BN254 binary.")
+__init_lib()
 
 #
 # Configuration options
@@ -358,11 +361,6 @@ class Fr(Structure):
 
     def setInt(self, d):
         lib.mclBnFr_setInt(self.d, d)
-
-    def setStr(self, s, io_mode=16):
-        ret = lib.mclBnFr_setStr(self.d, c_char_p(s), len(s), io_mode)
-        if ret:
-            raise ValueError("MCl failed to return from Fr:setStr")
     def setRnd(self):
         lib.mclBnFr_setByCSPRNG(self.d)
 
@@ -370,7 +368,17 @@ class Fr(Structure):
         self.setRnd()
         return self
 
-    def tostr(self, io_mode=16):
+    def fromstr(self, s, io_mode=16):
+        ret = lib.mclBnFr_setStr(self.d, c_char_p(s), len(s), io_mode)
+        if ret:
+            raise ValueError("MCl failed to return from Fr:getStr, ioMode=" + str(io_mode))
+        return self
+
+    @classmethod
+    def new_fromstr(cls, s, io_mode=16):
+        return Fr().fromstr(s, io_mode)
+
+    def tostr(self, io_mode=16, raw=True, length=1021):
         """
         # define MCLBN_IO_EC_AFFINE 0
         # define MCLBN_IO_BINARY 2
@@ -381,26 +389,23 @@ class Fr(Structure):
         # define MCLBN_IO_EC_PROJ 1024  // Jacobi coordinate for G1/G2  // 0
         # define MCLBN_IO_SERIALIZE_HEX_STR 2048  // 144
         """
-        svLen = 1024
-        sv = create_string_buffer(b"\x00" * svLen)
-        ret = lib.mclBnFr_getStr(sv, svLen, self.d, io_mode)
-        if ret == 0:
-            print(("MCl failed to return from Fr:getStr, ioMode=" + str(io_mode)))
-        return sv.value
+        sv = create_string_buffer(b"\x00" * length)
+        ret_len = lib.mclBnFr_getStr(sv, length, self.d, io_mode)
+        if ret_len == 0:
+            raise ValueError(("MCl failed to return from Fr:getStr, ioMode=" + str(io_mode)))
+        return sv.value if not raw else sv.raw[:ret_len]
 
-    def serialize(self):
-        svLen = 1024
-        sv = create_string_buffer(b"\x00" * svLen)
-        ret = lib.mclBnFr_serialize(sv, svLen, self.d)
-        if ret == 0:
+    def serialize(self, raw=True, length=1021):
+        sv = create_string_buffer(b"\x00" * length)
+        ret_len = lib.mclBnFr_serialize(sv, length, self.d)
+        if ret_len == 0:
             raise ValueError("MCl failed to return from GT:serialize")
-        return sv.value
+        return sv.value if not raw else sv.raw[:ret_len]
 
-    def deserialize(self, s):
-        svLen = 1024
+    def deserialize(self, s, length=None):
         sv = create_string_buffer(s)
-        ret = lib.mclBnFr_deserialize(self.d, sv, svLen)
-        if ret == 0:
+        ret_len = lib.mclBnGT_deserialize(self.d, sv, length or len(sv))  # or len(s)?
+        if ret_len == 0:
             raise ValueError("MCl failed to return from GT:deserialize")
         return self
 
@@ -544,7 +549,17 @@ class GT(Structure):  # mclBnGT type in C
             raise ValueError("MCl library call failed.")
         return result
 
-    def tostr(self, io_mode=16):
+    def fromstr(self, s, io_mode=16):
+        ret = lib.mclBnGT_setStr(self.d, c_char_p(s), len(s), io_mode)
+        if ret:
+            raise ValueError("MCl failed to return from GT:getStr, ioMode=" + str(io_mode))
+        return self
+
+    @classmethod
+    def new_fromstr(cls, s, io_mode=16):
+        return GT().fromstr(s, io_mode)
+
+    def tostr(self, io_mode=16, raw=True, length=1021):
         """
         # define MCLBN_IO_EC_AFFINE 0
         # define MCLBN_IO_BINARY 2
@@ -555,33 +570,23 @@ class GT(Structure):  # mclBnGT type in C
         # define MCLBN_IO_EC_PROJ 1024  // Jacobi coordinate for G1/G2  // 0
         # define MCLBN_IO_SERIALIZE_HEX_STR 2048  // 144
         """
-        svLen = 1024
-        sv = create_string_buffer(b"\x00" * svLen)
-        ret = lib.mclBnGT_getStr(sv, svLen, self.d, io_mode)
-
-
-        # for i in range(0, 5000):
-        #     sv = create_string_buffer(b"\x00" * svLen)
-        #     print(i, "{0:b}".format(i), lib.mclBnGT_getStr(sv, svLen, self.d, i), sv.value)
-
-
-        if ret == 0:
+        sv = create_string_buffer(b"\x00" * length)
+        ret_len = lib.mclBnGT_getStr(sv, length, self.d, io_mode)
+        if ret_len == 0:
             raise ValueError("MCl failed to return from GT:getStr, ioMode=" + str(io_mode))
-        return sv.value
+        return sv.value if not raw else sv.raw[:ret_len]
 
-    def serialize(self):
-        svLen = 1024
-        sv = create_string_buffer(b"\x00" * svLen)
-        ret = lib.mclBnGT_serialize(sv, svLen, self.d)
-        if ret == 0:
+    def serialize(self, raw=True, length=1021):
+        sv = create_string_buffer(b"\x00" * length)
+        ret_len = lib.mclBnGT_serialize(sv, length, self.d)
+        if ret_len == 0:
             raise ValueError("MCl failed to return from GT:serialize")
-        return sv.value
+        return sv.value if not raw else sv.raw[:ret_len]
 
-    def deserialize(self, s):
-        svLen = 1024
+    def deserialize(self, s, length=None):
         sv = create_string_buffer(s)
-        ret = lib.mclBnGT_deserialize(self.d, sv, svLen)
-        if ret == 0:
+        ret_len = lib.mclBnGT_deserialize(self.d, sv, length or len(sv))  # or len(s)?
+        if ret_len == 0:
             raise ValueError("MCl failed to return from GT:deserialize")
         return self
 
@@ -708,7 +713,17 @@ class G1(Structure):  # mclBnG1 type in C
     def __mul__(self, other):  # Again: Would it be good for me to enforce ordering?  Oblivious would just do this anyway.
         return self.mul(other)
 
-    def tostr(self, io_mode=16):
+    def fromstr(self, s, io_mode=16):
+        ret = lib.mclBnG1_setStr(self.d, c_char_p(s), len(s), io_mode)
+        if ret:
+            raise ValueError("MCl failed to return from G1:getStr, ioMode=" + str(io_mode))
+        return self
+
+    @classmethod
+    def new_fromstr(cls, s, io_mode=16):
+        return G1().fromstr(s, io_mode)
+
+    def tostr(self, io_mode=16, raw=True, length=1021):
         """
         # define MCLBN_IO_EC_AFFINE 0
         # define MCLBN_IO_BINARY 2
@@ -719,26 +734,23 @@ class G1(Structure):  # mclBnG1 type in C
         # define MCLBN_IO_EC_PROJ 1024  // Jacobi coordinate for G1/G2  // 0
         # define MCLBN_IO_SERIALIZE_HEX_STR 2048  // 144
         """
-        svLen = 1024
-        sv = create_string_buffer(b"\x00" * svLen)
-        ret = lib.mclBnG1_getStr(sv, svLen, self.d, io_mode)
-        if ret == 0:
+        sv = create_string_buffer(b"\x00" * length)
+        ret_len = lib.mclBnG1_getStr(sv, length, self.d, io_mode)
+        if ret_len == 0:
             raise ValueError("MCl failed to return from G1:getStr, ioMode=" + str(io_mode))
-        return sv.value
+        return sv.value if not raw else sv.raw[:ret_len]
 
-    def serialize(self):
-        svLen = 1024
-        sv = create_string_buffer(b"\x00" * svLen)
-        ret = lib.mclBnG1_serialize(sv, svLen, self.d)
-        if ret == 0:
+    def serialize(self, raw=True, length=1021):
+        sv = create_string_buffer(b"\x00" * length)
+        ret_len = lib.mclBnG1_serialize(sv, length, self.d)
+        if ret_len == 0:
             raise ValueError("MCl failed to return from G1:serialize")
-        return sv.value
+        return sv.value if not raw else sv.raw[:ret_len]
 
-    def deserialize(self, s):
-        svLen = 1024
+    def deserialize(self, s, length=None):
         sv = create_string_buffer(s)
-        ret = lib.mclBnG1_deserialize(self.d, sv, svLen)
-        if ret == 0:
+        ret_len = lib.mclBnGT_deserialize(self.d, sv, length or len(sv))  # or len(s)?
+        if ret_len == 0:
             raise ValueError("MCl failed to return from G1:deserialize")
         return self
 
@@ -886,7 +898,17 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
     def __mul__(self, other):
         return self.mul(other)
 
-    def tostr(self, io_mode=16):
+    def fromstr(self, s, io_mode=16):
+        ret = lib.mclBnG2_setStr(self.d, c_char_p(s), len(s), io_mode)
+        if ret:
+            raise ValueError("MCl failed to return from G2:getStr, ioMode=" + str(io_mode))
+        return self
+
+    @classmethod
+    def new_fromstr(cls, s, io_mode=16):
+        return G2().fromstr(s, io_mode)
+
+    def tostr(self, io_mode=16, raw=True, length=1021):
         """
         # define MCLBN_IO_EC_AFFINE 0
         # define MCLBN_IO_BINARY 2
@@ -897,26 +919,23 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
         # define MCLBN_IO_EC_PROJ 1024  // Jacobi coordinate for G1/G2  // 0
         # define MCLBN_IO_SERIALIZE_HEX_STR 2048  // 144
         """
-        svLen = 1024
-        sv = create_string_buffer(b"\x00" * svLen)
-        ret = lib.mclBnG2_getStr(sv, svLen, self.d, io_mode)
-        if ret == 0:
+        sv = create_string_buffer(b"\x00" * length)
+        ret_len = lib.mclBnG2_getStr(sv, length, self.d, io_mode)
+        if ret_len == 0:
             print("MCl failed to return from G2:getStr, ioMode=" + str(io_mode))
-        return sv.value
+        return sv.value if not raw else sv.raw[:ret_len]
 
-    def serialize(self):
-        svLen = 1024
-        sv = create_string_buffer(b"\x00" * svLen)
-        ret = lib.mclBnG2_serialize(sv, svLen, self.d)
-        if ret == 0:
+    def serialize(self, raw=True, length=1021):
+        sv = create_string_buffer(b"\x00" * length)
+        ret_len = lib.mclBnG2_serialize(sv, length, self.d)
+        if ret_len == 0:
             raise ValueError("MCl failed to return from G2:serialize")
-        return sv.value
+        return sv.value if not raw else sv.raw[:ret_len]
 
-    def deserialize(self, s):
-        svLen = 1024
+    def deserialize(self, s, length=None):
         sv = create_string_buffer(s)
-        ret = lib.mclBnG2_deserialize(self.d, sv, svLen)
-        if ret == 0:
+        ret_len = lib.mclBnGT_deserialize(self.d, sv, length or len(sv))  # or len(s)?
+        if ret_len == 0:
             raise ValueError("MCl failed to return from G2:deserialize")
         return self
 
