@@ -1,22 +1,13 @@
-from ctypes import *
-from ctypes import CDLL, c_char_p
+from ctypes import Structure, c_uint64, cdll, c_char_p, create_string_buffer
 from hashlib import blake2b
 import platform
 import pkg_resources
 
-sysname = platform.system()
-
-if sysname == 'Darwin':
-    lib_name = "libmclbn256.dylib"
-elif sysname == 'Windows':
+if platform.system() == 'Windows':
     lib_name = "libmclbn256.dll"
 else:
     lib_name = "libmclbn256.so"
-
-if __name__ == '__main__':
-    lib_path = "../../lib/libmclbn256.dylib"
-else:
-    lib_path = pkg_resources.resource_filename('mclbn256', lib_name)
+lib_path = pkg_resources.resource_filename('mclbn256', lib_name)
 
 #
 # Define constants needed to replace the C headers
@@ -38,7 +29,7 @@ mclBnG2_bytes = c_uint64 * MCLBN_FP_UNIT_SIZE * PAIR_SCALE * DIMENSIONALITY
 #
 # Headers for developer's convenience
 #
-class g_lib:
+class lib:
     def mclBnG1_setDst(dst, dstSize):
         """const char *dst, mclSize dstSize"""
         return int()
@@ -340,10 +331,17 @@ class g_lib:
 # Load DLL or DyLib from the wheel (or disk?)
 #
 def __init():
-    global g_lib
-    g_lib = cdll.LoadLibrary(lib_path)
-    if g_lib.mclBn_init(mclBn_CurveFp254BNb, MCLBN_COMPILED_TIME_VAR): print("Failed to load MCl's BN254 binary.")
+    global lib
+    lib = cdll.LoadLibrary(lib_path)
+    if lib.mclBn_init(mclBn_CurveFp254BNb, MCLBN_COMPILED_TIME_VAR): print("Failed to load MCl's BN254 binary.")
 __init()
+
+#
+# Configuration options
+#
+use_memo = True
+def disable_memoization(): global use_memo; use_memo = False
+def reenable_memoization(): global use_memo; use_memo = True
 
 #
 # C-Types based on the structs defined in bn.h
@@ -351,66 +349,110 @@ __init()
 class Fr(Structure):
     _fields_ = [("d", mclBnFr_bytes)]
 
-    def __str__(self):
-        return self.tostr().decode()
-
-    def __init__(self, value=None):
+    def __init__(self, value=None, *args, **kw):
+        super().__init__(*args, **kw)
         if value:
             self.setInt(value)
         else:
             self.setRnd()
 
+    def __str__(self):
+        return self.tostr().decode()
+
     def setInt(self, d):
-        g_lib.mclBnFr_setInt(self.d, d)
-    def setStr(self, s):
-        ret = g_lib.mclBnFr_setStr(self.d, c_char_p(s), len(s), 1)
+        lib.mclBnFr_setInt(self.d, d)
+
+    def setStr(self, s, io_mode=16):
+        ret = lib.mclBnFr_setStr(self.d, c_char_p(s), len(s), io_mode)
         if ret:
-            print("ERR Fr:setStr")
+            raise ValueError("MCl failed to return from Fr:setStr")
     def setRnd(self):
-        g_lib.mclBnFr_setByCSPRNG(self.d)
-    def tostr(self):
+        lib.mclBnFr_setByCSPRNG(self.d)
+
+    def randomize(self):
+        self.setRnd()
+        return self
+
+    def tostr(self, io_mode=16):
+        """
+        # define MCLBN_IO_EC_AFFINE 0
+        # define MCLBN_IO_BINARY 2
+        # define MCLBN_IO_DECIMAL 10
+        # define MCLBN_IO_HEX_BIG_ENDIAN 16
+        # define MCLBN_IO_BYTES 32
+        # define MCLBN_IO_0xHEX_LITTLE_ENDIAN 144
+        # define MCLBN_IO_EC_PROJ 1024  // Jacobi coordinate for G1/G2  // 0
+        # define MCLBN_IO_SERIALIZE_HEX_STR 2048  // 144
+        """
         svLen = 1024
         sv = create_string_buffer(b"\x00" * svLen)
-        ret = g_lib.mclBnFr_getStr(sv, svLen, self.d, 1)
-        if ret:
-            print("ERR Fr:getStr", ret)
+        ret = lib.mclBnFr_getStr(sv, svLen, self.d, io_mode)
+        if ret == 0:
+            print(("MCl failed to return from Fr:getStr, ioMode=" + str(io_mode)))
+            # raise ValueError("MCl failed to return from Fr:getStr, ioMode=" + str(io_mode))
         return sv.value
+
+    def serialize(self):
+        svLen = 1024
+        sv = create_string_buffer(b"\x00" * svLen)
+        ret = lib.mclBnFr_serialize(sv, svLen, self.d)
+        if ret == 0:
+            raise ValueError("MCl failed to return from GT:serialize")
+        return sv.value
+
+    def deserialize(self, s):
+        svLen = 1024
+        sv = create_string_buffer(s)
+        ret = lib.mclBnFr_deserialize(self.d, sv, svLen)
+        if ret == 0:
+            raise ValueError("MCl failed to return from GT:deserialize")
+        return self
+
     def isZero(self):
-        return not g_lib.mclBnFr_isZero(self.d) == 0
+        return bool(lib.mclBnFr_isZero(self.d))
+
     def isOne(self):
-        return not g_lib.mclBnFr_isOne(self.d) == 0
+        return bool(lib.mclBnFr_isOne(self.d))
+
     def __neg__(self):
         ret = Fr()
-        g_lib.mclBnFr_neg(ret.d, self.d)
+        lib.mclBnFr_neg(ret.d, self.d)
         return ret
+
     def __invert__(self):
         ret = Fr()
-        g_lib.mclBnFr_inv(ret.d, self.d)
+        lib.mclBnFr_inv(ret.d, self.d)
         return ret
+
     def __add__(self, rhs):
         assert(type(rhs) is Fr)
         ret = Fr()
-        g_lib.mclBnFr_add(ret.d, self.d, rhs.d)
+        lib.mclBnFr_add(ret.d, self.d, rhs.d)
         return ret
+
     def __sub__(self, rhs):
         assert(type(rhs) is Fr)
         ret = Fr()
-        g_lib.mclBnFr_sub(ret.d, self.d, rhs.d)
+        lib.mclBnFr_sub(ret.d, self.d, rhs.d)
         return ret
+
     def __mul__(self, rhs):
         assert(type(rhs) is Fr)
         ret = Fr()
-        g_lib.mclBnFr_mul(ret.d, self.d, rhs.d)
+        lib.mclBnFr_mul(ret.d, self.d, rhs.d)
         return ret
+
     def __div__(self, rhs):
         assert(type(rhs) is Fr)
         ret = Fr()
-        g_lib.mclBnFr_div(ret.d, self.d, rhs.d)
+        lib.mclBnFr_div(ret.d, self.d, rhs.d)
         return ret
+
     def __eq__(self, rhs):
-        return not g_lib.mclBnFr_isEqual(self.d, rhs.d) == 0
+        return bool(lib.mclBnFr_isEqual(self.d, rhs.d))
+
     def __ne__(self, rhs):
-        return g_lib.mclBnFr_isEqual(self.d, rhs.d) == 0
+        return not bool(lib.mclBnFr_isEqual(self.d, rhs.d))
 
 class Fp6Array(Structure):
     # _fields_ = [("d", 2 * mclBnGT_bytes)]  # I think Q_coeff precomputed G2 pairing may be made of two mclBnGT types
@@ -431,7 +473,7 @@ class GT(Structure):  # mclBnGT type in C
 
     def clear(self):# -> void
         x = self.d
-        retval = g_lib.mclBnGT_clear(x)
+        retval = lib.mclBnGT_clear(x)
         if retval:
             raise ValueError("MCl library call failed.")
         return retval
@@ -440,7 +482,7 @@ class GT(Structure):  # mclBnGT type in C
         result = GT()
         z = result.d
         x = self.d
-        libretval = g_lib.mclBnGT_neg(z, x)
+        libretval = lib.mclBnGT_neg(z, x)
         if libretval == -1:
             raise ValueError("MCl library call failed.")
         return result
@@ -453,7 +495,7 @@ class GT(Structure):  # mclBnGT type in C
         z = result.d
         x = self.d
         y = other.d
-        libretval = g_lib.mclBnGT_add(z, x, y)
+        libretval = lib.mclBnGT_add(z, x, y)
         if libretval == -1:
             raise ValueError("MCl library call failed.")
         return result
@@ -466,7 +508,7 @@ class GT(Structure):  # mclBnGT type in C
         z = result.d
         x = self.d
         y = other.d
-        libretval = g_lib.mclBnGT_sub(z, x, y)
+        libretval = lib.mclBnGT_sub(z, x, y)
         if libretval == -1:
             raise ValueError("MCl library call failed.")
         return result
@@ -479,7 +521,7 @@ class GT(Structure):  # mclBnGT type in C
         z = result.d
         x = self.d
         y = other.d
-        libretval = g_lib.mclBnGT_mul(z, x, y)
+        libretval = lib.mclBnGT_mul(z, x, y)
         if libretval == -1:
             raise ValueError("MCl library call failed.")
         return result
@@ -492,7 +534,7 @@ class GT(Structure):  # mclBnGT type in C
         z = result.d
         x = self.d
         y = other.d
-        libretval = g_lib.mclBnGT_pow(z, x, y)
+        libretval = lib.mclBnGT_pow(z, x, y)
         if libretval == -1:
             raise ValueError("MCl library call failed.")
         return result
@@ -504,39 +546,55 @@ class GT(Structure):  # mclBnGT type in C
         result = GT()
         z = result.d
         x = self.d
-        libretval = g_lib.mclBn_finalExp(z, x)
+        libretval = lib.mclBn_finalExp(z, x)
         if libretval == -1:
             raise ValueError("MCl library call failed.")
         return result
 
-    def tostr(self):
+    def tostr(self, io_mode=16):
+        """
+        # define MCLBN_IO_EC_AFFINE 0
+        # define MCLBN_IO_BINARY 2
+        # define MCLBN_IO_DECIMAL 10
+        # define MCLBN_IO_HEX_BIG_ENDIAN 16
+        # define MCLBN_IO_0xHEX_LITTLE_ENDIAN 144
+        # define MCLBN_IO_EC_PROJ 1024  // Jacobi coordinate for G1/G2
+        # define MCLBN_IO_SERIALIZE_HEX_STR 2048
+        """
         svLen = 1024
         sv = create_string_buffer(b"\x00" * svLen)
-        ret = g_lib.mclBnGT_getStr(sv, svLen, self.d, 0)
-        if ret < 0:
-            print("ERR GT:getStr")
+        ret = lib.mclBnFr_getStr(sv, svLen, self.d, io_mode)
+
+
+        # for i in range(0, 5000):
+        #     sv = create_string_buffer(b"\x00" * svLen)
+        #     print(i, "{0:b}".format(i), lib.mclBnFr_getStr(sv, svLen, self.d, i), sv.value)
+
+
+        if ret == 0:
+            raise ValueError("MCl failed to return from GT:getStr, ioMode=" + str(io_mode))
         return sv.value
 
     def serialize(self):
         svLen = 1024
         sv = create_string_buffer(b"\x00" * svLen)
-        ret = g_lib.mclBnGT_serialize(sv, svLen, self.d)
+        ret = lib.mclBnGT_serialize(sv, svLen, self.d)
         if ret == 0:
-            print("ERR GT:serialize")
+            raise ValueError("MCl failed to return from GT:serialize")
         return sv.value
 
     def deserialize(self, s):
         svLen = 1024
         sv = create_string_buffer(s)
-        ret = g_lib.mclBnGT_deserialize(self.d, sv, svLen)
+        ret = lib.mclBnGT_deserialize(self.d, sv, svLen)
         if ret == 0:
-            print("ERR GT:deserialize")
+            raise ValueError("MCl failed to return from GT:deserialize")
         return self
 
     def equals(self, other):# -> int
         x = self.d
         y = other.d
-        retval = g_lib.mclBnGT_isEqual(x, y)
+        retval = lib.mclBnGT_isEqual(x, y)
         return bool(retval)  # same as `retval != 0`
 
     def __eq__(self, other):
@@ -547,7 +605,7 @@ class GT(Structure):  # mclBnGT type in C
 
     def zero(self):# -> int
         x = self.d
-        retval = g_lib.mclBnGT_isZero(x)
+        retval = lib.mclBnGT_isZero(x)
         return retval
 
 class G1(Structure):  # mclBnG1 type in C
@@ -558,23 +616,23 @@ class G1(Structure):  # mclBnG1 type in C
 
     def randomize(self):
         sr = Fr(); sr.setRnd()
-        g_lib.mclBnG1_hashAndMapTo(self.d, sr.d, 32)
+        lib.mclBnG1_hashAndMapTo(self.d, sr.d, 32)
         return self.mul(sr)
 
     # def hash(self, s):
-    #     return g_lib.mclBnG1_hashAndMapTo(self.d, c_wchar_p(s), len(s))
+    #     return lib.mclBnG1_hashAndMapTo(self.d, c_wchar_p(s), len(s))
     def hash(self, s):
         h = blake2b()
         if type(s) is str: s = s.encode()
         h.update(s)
         h = h.digest()[:16]
-        ret = g_lib.mclBnG1_hashAndMapTo(self.d, c_char_p(h), 16)
+        ret = lib.mclBnG1_hashAndMapTo(self.d, c_char_p(h), 16)
         if not ret == 0:
             raise ValueError("MCl library call failed.")
         return self
 
     def valid(self):
-        return bool(g_lib.mclBnG1_isValid(self.d))
+        return bool(lib.mclBnG1_isValid(self.d))
 
     def print_valid(self):
         is_valid = self.valid()
@@ -582,7 +640,7 @@ class G1(Structure):  # mclBnG1 type in C
 
     def clear(self):# -> void
         x = self.d
-        retval = g_lib.mclBnG1_clear(x)
+        retval = lib.mclBnG1_clear(x)
         if retval:
             raise ValueError("MCl library call failed.")
         return retval
@@ -591,7 +649,7 @@ class G1(Structure):  # mclBnG1 type in C
         result = G1()
         z = result.d
         x = self.d
-        libretval = g_lib.mclBnG1_neg(z, x)
+        libretval = lib.mclBnG1_neg(z, x)
         if libretval == -1:
             raise ValueError("MCl library call failed.")
         return result
@@ -603,7 +661,7 @@ class G1(Structure):  # mclBnG1 type in C
         result = G1()
         z = result.d
         x = self.d
-        libretval = g_lib.mclBnG1_dbl(z, x)
+        libretval = lib.mclBnG1_dbl(z, x)
         if libretval == -1:
             raise ValueError("MCl library call failed.")
         return result
@@ -613,7 +671,7 @@ class G1(Structure):  # mclBnG1 type in C
         z = result.d
         x = self.d
         y = other.d
-        libretval = g_lib.mclBnG1_add(z, x, y)
+        libretval = lib.mclBnG1_add(z, x, y)
         if libretval == -1:
             raise ValueError("MCl library call failed.")
         return result
@@ -626,7 +684,7 @@ class G1(Structure):  # mclBnG1 type in C
         z = result.d
         x = self.d
         y = other.d
-        libretval = g_lib.mclBnG1_sub(z, x, y)
+        libretval = lib.mclBnG1_sub(z, x, y)
         if libretval == -1:
             raise ValueError("MCl library call failed.")
         return result
@@ -638,7 +696,7 @@ class G1(Structure):  # mclBnG1 type in C
         result = G1()
         z = result.d
         x = self.d
-        libretval = g_lib.mclBnG1_normalize(z, x)
+        libretval = lib.mclBnG1_normalize(z, x)
         if libretval == -1:
             raise ValueError("MCl library call failed.")
         return result
@@ -648,7 +706,7 @@ class G1(Structure):  # mclBnG1 type in C
         z = result.d
         x = self.d
         y = other.d
-        libretval = g_lib.mclBnG1_mul(z, x, y)
+        libretval = lib.mclBnG1_mul(z, x, y)
         if libretval == -1:
             raise ValueError("MCl library call failed.")
         return result
@@ -656,55 +714,72 @@ class G1(Structure):  # mclBnG1 type in C
     def __mul__(self, other):  # Again: Would it be good for me to enforce ordering?  Oblivious would just do this anyway.
         return self.mul(other)
 
-    def tostr(self):
+    def tostr(self, io_mode=16):
+        """
+        # define MCLBN_IO_EC_AFFINE 0
+        # define MCLBN_IO_BINARY 2
+        # define MCLBN_IO_DECIMAL 10
+        # define MCLBN_IO_HEX_BIG_ENDIAN 16
+        # define MCLBN_IO_0xHEX_LITTLE_ENDIAN 144
+        # define MCLBN_IO_EC_PROJ 1024  // Jacobi coordinate for G1/G2
+        # define MCLBN_IO_SERIALIZE_HEX_STR 2048
+        """
         svLen = 1024
         sv = create_string_buffer(b"\x00" * svLen)
-        ret = g_lib.mclBnG1_getStr(sv, svLen, self.d, 0)
-        if ret < 0:
-            print("ERR G1:getStr")
+        ret = lib.mclBnFr_getStr(sv, svLen, self.d, io_mode)
+
+
+        # for i in range(0, 5000):
+        #     sv = create_string_buffer(b"\x00" * svLen)
+        #     print(i, "{0:b}".format(i), lib.mclBnFr_getStr(sv, svLen, self.d, i), sv.value)
+
+
+        if ret == 0:
+            raise ValueError("MCl failed to return from G1:getStr, ioMode=" + str(io_mode))
         return sv.value
 
     def serialize(self):
         svLen = 1024
         sv = create_string_buffer(b"\x00" * svLen)
-        ret = g_lib.mclBnG1_serialize(sv, svLen, self.d)
+        ret = lib.mclBnG1_serialize(sv, svLen, self.d)
         if ret == 0:
-            print("ERR G1:serialize")
+            raise ValueError("MCl failed to return from G1:serialize")
         return sv.value
 
     def deserialize(self, s):
         svLen = 1024
         sv = create_string_buffer(s)
-        ret = g_lib.mclBnG1_deserialize(self.d, sv, svLen)
+        ret = lib.mclBnG1_deserialize(self.d, sv, svLen)
         if ret == 0:
-            print("ERR G1:deserialize")
+            raise ValueError("MCl failed to return from G1:deserialize")
         return self
 
     def pairing(self, other):# -> void
-        assert(type(other) is G2)
-        #print("pairing, G1 first")
-        result = GT()
-        z = result.d
-        x = self.d
-        y = other.d
-        libretval = g_lib.mclBn_pairing(z, x, y)
-        if libretval == -1:
-            # print("libretval:", libretval)
-            raise ValueError("MCl library call failed.")
-        return result
+        #assert(type(other) is G2)
+        if use_memo:
+            if not other.coeff:
+                other.coeff = other.precompute()
+
+            result = GT()
+            lib.mclBn_precomputedMillerLoop(result.d, self.d, other.coeff.d)
+            return result.final_exp()
+        else:
+            result = GT()
+            lib.mclBn_pairing(result.d, self.d, other.d)
+            return result
 
     def __matmul__(self, other):
         return self.pairing(other)
 
     def valid_order(self):# -> int
         x = self.d
-        retval = g_lib.mclBnG1_isValidOrder(x)
+        retval = lib.mclBnG1_isValidOrder(x)
         return bool(retval)
 
     def equals(self, other):# -> int
         x = self.d
         y = other.d
-        retval = g_lib.mclBnG1_isEqual(x, y)
+        retval = lib.mclBnG1_isEqual(x, y)
         return bool(retval)  # same as `retval != 0`
 
     def __eq__(self, other):
@@ -715,7 +790,7 @@ class G1(Structure):  # mclBnG1 type in C
 
     def zero(self):# -> int
         x = self.d
-        retval = g_lib.mclBnG1_isZero(x)
+        retval = lib.mclBnG1_isZero(x)
         return retval
 
 class G2(Structure):  # mclBnG2 type in C, see bn.h
@@ -727,7 +802,7 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
 
     def randomize(self):
         sr = Fr(); sr.setRnd()
-        g_lib.mclBnG2_hashAndMapTo(self.d, sr.d, 32)
+        lib.mclBnG2_hashAndMapTo(self.d, sr.d, 32)
         return self.mul(sr)
 
     def hash(self, s):
@@ -735,13 +810,13 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
         if type(s) is str: s = s.encode()
         h.update(s)
         h = h.digest()[:16]
-        ret = g_lib.mclBnG2_hashAndMapTo(self.d, c_char_p(h), 16)
+        ret = lib.mclBnG2_hashAndMapTo(self.d, c_char_p(h), 16)
         if not ret == 0:
             raise ValueError("MCl library call failed.")
         return self
 
     def valid(self):
-        return bool(g_lib.mclBnG2_isValid(self.d))
+        return bool(lib.mclBnG2_isValid(self.d))
 
     def print_valid(self):
         is_valid = self.valid()
@@ -749,7 +824,7 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
 
     def clear(self):# -> void
         x = self.d
-        retval = g_lib.mclBnG2_clear(x)
+        retval = lib.mclBnG2_clear(x)
         if retval:
             raise ValueError("MCl library call failed.")
         return retval
@@ -758,7 +833,7 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
         result = G2()
         z = result.d
         x = self.d
-        libretval = g_lib.mclBnG2_neg(z, x)
+        libretval = lib.mclBnG2_neg(z, x)
         if libretval == -1:
             raise ValueError("MCl library call failed.")
         return result
@@ -770,7 +845,7 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
         result = G2()
         z = result.d
         x = self.d
-        libretval = g_lib.mclBnG2_dbl(z, x)
+        libretval = lib.mclBnG2_dbl(z, x)
         if libretval == -1:
             raise ValueError("MCl library call failed.")
         return result
@@ -780,7 +855,7 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
         z = result.d
         x = self.d
         y = other.d
-        libretval = g_lib.mclBnG2_add(z, x, y)
+        libretval = lib.mclBnG2_add(z, x, y)
         if libretval == -1:
             raise ValueError("MCl library call failed.")
         return result
@@ -793,7 +868,7 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
         z = result.d
         x = self.d
         y = other.d
-        libretval = g_lib.mclBnG2_sub(z, x, y)
+        libretval = lib.mclBnG2_sub(z, x, y)
         if libretval == -1:
             raise ValueError("MCl library call failed.")
         return result
@@ -805,7 +880,7 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
         result = G2()
         z = result.d
         x = self.d
-        libretval = g_lib.mclBnG2_normalize(z, x)
+        libretval = lib.mclBnG2_normalize(z, x)
         if libretval == -1:
             raise ValueError("MCl library call failed.")
         return result
@@ -815,7 +890,7 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
         z = result.d
         x = self.d
         y = other.d
-        libretval = g_lib.mclBnG2_mul(z, x, y)
+        libretval = lib.mclBnG2_mul(z, x, y)
         if libretval == -1:
             raise ValueError("MCl library call failed.")
         return result
@@ -823,83 +898,66 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
     def __mul__(self, other):
         return self.mul(other)
 
-    def tostr(self):
+    def tostr(self, io_mode=16):
+        """
+        # define MCLBN_IO_EC_AFFINE 0
+        # define MCLBN_IO_BINARY 2
+        # define MCLBN_IO_DECIMAL 10
+        # define MCLBN_IO_HEX_BIG_ENDIAN 16
+        # define MCLBN_IO_0xHEX_LITTLE_ENDIAN 144
+        # define MCLBN_IO_EC_PROJ 1024  // Jacobi coordinate for G1/G2
+        # define MCLBN_IO_SERIALIZE_HEX_STR 2048
+        """
         svLen = 1024
         sv = create_string_buffer(b"\x00" * svLen)
-        ret = g_lib.mclBnG2_getStr(sv, svLen, self.d, 0)
-        if ret < 0:
-            print("ERR G2:getStr")
+        ret = lib.mclBnFr_getStr(sv, svLen, self.d, io_mode)
+
+
+        # for i in range(0, 5000):
+        #     sv = create_string_buffer(b"\x00" * svLen)
+        #     print(i, "{0:b}".format(i), lib.mclBnFr_getStr(sv, svLen, self.d, i), sv.value)
+
+
+        if ret == 0:
+            print("MCl failed to return from G2:getStr, ioMode=" + str(io_mode))
+            # raise ValueError("MCl failed to return from G2:getStr, ioMode=" + str(io_mode))
         return sv.value
 
     def serialize(self):
         svLen = 1024
         sv = create_string_buffer(b"\x00" * svLen)
-        ret = g_lib.mclBnG2_serialize(sv, svLen, self.d)
+        ret = lib.mclBnG2_serialize(sv, svLen, self.d)
         if ret == 0:
-            print("ERR G2:serialize")
+            raise ValueError("MCl failed to return from G2:serialize")
         return sv.value
 
     def deserialize(self, s):
         svLen = 1024
         sv = create_string_buffer(s)
-        ret = g_lib.mclBnG2_deserialize(self.d, sv, svLen)
+        ret = lib.mclBnG2_deserialize(self.d, sv, svLen)
         if ret == 0:
-            print("ERR G2:deserialize")
+            raise ValueError("MCl failed to return from G2:deserialize")
         return self
 
     def pairing(self, other):# -> void
-        assert(type(other) is G1)
+        # assert(type(other) is G1)
+        if use_memo:
+            if not self.coeff:
+                self.coeff = self.precompute()
 
-
-        if not self.coeff:
-            self.coeff = self.precompute()
-            print("cached precomputed coefficient")
-
-        result = GT()
-        z = result.d
-        x = self.coeff.d
-        y = other.d
-        libretval = g_lib.mclBn_precomputedMillerLoop(z, y, x)  # sorted, so use the reverse order
-        if libretval == -1: raise ValueError("MCl library call failed.")
-        return result.final_exp()
-
-
-
-
-
-
-
-        #print("pairing, G2 first")
-        q_coeff = self.precompute()
-
-        result = GT()
-        z = result.d
-        x = q_coeff.d
-        y = other.d
-        libretval = g_lib.mclBn_precomputedMillerLoop(z, y, x)  # sorted, so use the reverse order
-        del q_coeff
-        if libretval == -1: raise ValueError("MCl library call failed.")
-        # result = result.final_exp()  # Is this necessary?
-        # return result
-
-        return result.final_exp()
-
-
-
-        result = GT()
-        z = result.d
-        x = self.d
-        y = other.d
-        libretval = g_lib.mclBn_pairing(z, y, x)  # sorted, so use the reverse order
-        if libretval == -1:
-            raise ValueError("MCl library call failed.")
-        return result
+            result = GT()
+            lib.mclBn_precomputedMillerLoop(result.d, other.d, self.coeff.d)  # sorted, so use the reverse order
+            return result.final_exp()
+        else:
+            result = GT()
+            lib.mclBn_pairing(result.d, other.d, self.d)  # sorted, so use the reverse order
+            return result
 
     def precompute(self):# -> void
         result = Fp6Array()
         z = result.d
         x = self.d
-        libretval = g_lib.mclBn_precomputeG2(z, x)
+        libretval = lib.mclBn_precomputeG2(z, x)
         #print([e[0] for e in enumerate(list(z)) if e[1] == 0][0:10])
         if libretval == -1:
             raise ValueError("MCl library call failed.")
@@ -910,13 +968,13 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
 
     def valid_order(self):# -> int
         x = self.d
-        retval = g_lib.mclBnG2_isValidOrder(x)
+        retval = lib.mclBnG2_isValidOrder(x)
         return bool(retval)
 
     def equals(self, other):# -> int
         x = self.d
         y = other.d
-        retval = g_lib.mclBnG2_isEqual(x, y)
+        retval = lib.mclBnG2_isEqual(x, y)
         return bool(retval)  # same as `retval != 0`
 
     def __eq__(self, other):
@@ -927,7 +985,7 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
 
     def zero(self):# -> int
         x = self.d
-        retval = g_lib.mclBnG2_isZero(x)
+        retval = lib.mclBnG2_isZero(x)
         return retval
 
 
@@ -951,7 +1009,7 @@ def big_test():
 
 
     # p = (c_uint64 * 4) * 3
-    # g_lib.mclBnG1_getBasePoint(p)
+    # lib.mclBnG1_getBasePoint(p)
 
 
 
@@ -961,9 +1019,11 @@ def big_test():
 
     g = G1()
     g.hash("Hello, World")
+    print(g.tostr())
 
     p = G1()
     p.hash("Hello, Wyatt John Howe")
+    print(p.tostr())
 
     q = G1()
     print(g.equals(q))
@@ -973,7 +1033,7 @@ def big_test():
 
 
     # print(5)
-    # g_lib.mclBnG1_isValid(q)
+    # lib.mclBnG1_isValid(q)
     # is_valid = q.valid()
     # print(6)
     # print("This point is valid." if is_valid else "invalid!")
@@ -1072,7 +1132,7 @@ def big_test():
 
 
     # p = (c_uint64 * 4) * 3
-    # g_lib.mclBnG2_getBasePoint(p)
+    # lib.mclBnG2_getBasePoint(p)
 
 
 
@@ -1099,7 +1159,7 @@ def big_test():
 
 
     # print(5)
-    # g_lib.mclBnG2_isValid(q)
+    # lib.mclBnG2_isValid(q)
     # is_valid = q.valid()
     # print(6)
     # print("This point is valid." if is_valid else "invalid!")
@@ -1139,7 +1199,7 @@ def big_test():
     s = Fr(); s.setRnd()
     # s = Fr(); s.setInt(7)
     t = Fr(); t.setInt(7)
-
+    # s.tostr()
 
     print(g.mul(s).mul(t).serialize())
     print(g.mul(t).mul(s).serialize())
@@ -1285,6 +1345,8 @@ def test_pairing_algebra():
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
+    big_test()
+
     # # print_('testing')
     #
     # for _ in range(99):
@@ -1296,8 +1358,8 @@ if __name__ == '__main__':
 
     import timeit
 
-    P = G1().hash("Wyatt")
-    Q = G2().hash("Howe")
+    P = G1().hash("Pp")
+    Q = G2().hash("Qq")
     count = 10000
     start_time = timeit.default_timer()
 
@@ -1318,8 +1380,8 @@ if __name__ == '__main__':
     print()
 
 
-    P = G1().hash("Wyattt")
-    Q = G2().hash("Howwe")
+    P = G1().hash("pP")
+    Q = G2().hash("qQ")
     count = 10000
     start_time = timeit.default_timer()
 
@@ -1337,6 +1399,53 @@ if __name__ == '__main__':
     print(bytes(e))
     print(elapsed, "seconds elapsed")
     print(str(round(1000*elapsed_avg, 2))+"ms per operation")
+    print()
+
+    disable_memoization()
+
+
+    P = G1().hash("pp")
+    Q = G2().hash("qq")
+    count = 10000
+    start_time = timeit.default_timer()
+
+    e = P @ Q
+    for _ in range(count):
+        e = e + P @ Q
+        # le = Q @ P
+        # re = P @ Q
+        # print(bytes(le))
+        # print(bytes(re))
+        # print(le == re)
+
+    elapsed = timeit.default_timer() - start_time
+    elapsed_avg = elapsed/count
+    print(bytes(e))
+    print(elapsed, "seconds elapsed")
+    print(str(round(1000*elapsed_avg, 2))+"ms per operation")
+    print()
+
+
+    P = G1().hash("PP")
+    Q = G2().hash("QQ")
+    count = 10000
+    start_time = timeit.default_timer()
+
+    e = P @ Q
+    for _ in range(count):
+        e = e + Q @ P
+        # le = Q @ P
+        # re = P @ Q
+        # print(bytes(le))
+        # print(bytes(re))
+        # print(le == re)
+
+    elapsed = timeit.default_timer() - start_time
+    elapsed_avg = elapsed/count
+    print(bytes(e))
+    print(elapsed, "seconds elapsed")
+    print(str(round(1000*elapsed_avg, 2))+"ms per operation")
+    print()
 
 
 assert(test_pairing_algebra())  # Does not return on fail.  Vacuous assert.
