@@ -1,10 +1,7 @@
-# Byte-compiled / optimized / DLL files
+# Byte-compiled / optimized
 __pycache__/
 *.py[cod]
 *$py.class
-
-# C extensions
-*.so
 
 # Distribution / packaging
 .Python
@@ -151,3 +148,10 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 .DS_Store
+.idea/vcs.xml
+.idea/modules.xml
+.idea/misc.xml
+.idea/mclbn256.iml
+.idea/inspectionProfiles/Project_Default.xml
+.idea/inspectionProfiles/profiles_settings.xml
+.idea/workspace.xml
