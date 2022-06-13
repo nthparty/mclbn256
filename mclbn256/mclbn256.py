@@ -389,7 +389,6 @@ class Fr(Structure):
         ret = lib.mclBnFr_getStr(sv, svLen, self.d, io_mode)
         if ret == 0:
             print(("MCl failed to return from Fr:getStr, ioMode=" + str(io_mode)))
-            # raise ValueError("MCl failed to return from Fr:getStr, ioMode=" + str(io_mode))
         return sv.value
 
     def serialize(self):
@@ -454,15 +453,12 @@ class Fr(Structure):
     def __ne__(self, rhs):
         return not bool(lib.mclBnFr_isEqual(self.d, rhs.d))
 
-class Fp6Array(Structure):
-    # _fields_ = [("d", 2 * mclBnGT_bytes)]  # I think Q_coeff precomputed G2 pairing may be made of two mclBnGT types
-    # _fields_ = [("d", mclBnG2_bytes)]
-    # _fields_ = [("d", c_uint64 * 1680)]
+class Fp6Array(Structure):  # 4 * 6 * 70 unsigned longs = 13440 bytes per precomputed and memoized point in G2
     _fields_ = [("d", mclBnFp_bytes * 6 * precomputedQcoeffSize)]
     def __bytes__(self):
         return bytes(self.d)
     def __str__(self):
-        return self.tostr().decode()
+        return "<Fp6Array (use bytes to see contents) 14KB array>"
 
 class GT(Structure):  # mclBnGT type in C
     _fields_ = [("d", mclBnGT_bytes)]
@@ -557,9 +553,10 @@ class GT(Structure):  # mclBnGT type in C
         # define MCLBN_IO_BINARY 2
         # define MCLBN_IO_DECIMAL 10
         # define MCLBN_IO_HEX_BIG_ENDIAN 16
+        # define MCLBN_IO_BYTES 32
         # define MCLBN_IO_0xHEX_LITTLE_ENDIAN 144
-        # define MCLBN_IO_EC_PROJ 1024  // Jacobi coordinate for G1/G2
-        # define MCLBN_IO_SERIALIZE_HEX_STR 2048
+        # define MCLBN_IO_EC_PROJ 1024  // Jacobi coordinate for G1/G2  // 0
+        # define MCLBN_IO_SERIALIZE_HEX_STR 2048  // 144
         """
         svLen = 1024
         sv = create_string_buffer(b"\x00" * svLen)
@@ -720,20 +717,14 @@ class G1(Structure):  # mclBnG1 type in C
         # define MCLBN_IO_BINARY 2
         # define MCLBN_IO_DECIMAL 10
         # define MCLBN_IO_HEX_BIG_ENDIAN 16
+        # define MCLBN_IO_BYTES 32
         # define MCLBN_IO_0xHEX_LITTLE_ENDIAN 144
-        # define MCLBN_IO_EC_PROJ 1024  // Jacobi coordinate for G1/G2
-        # define MCLBN_IO_SERIALIZE_HEX_STR 2048
+        # define MCLBN_IO_EC_PROJ 1024  // Jacobi coordinate for G1/G2  // 0
+        # define MCLBN_IO_SERIALIZE_HEX_STR 2048  // 144
         """
         svLen = 1024
         sv = create_string_buffer(b"\x00" * svLen)
         ret = lib.mclBnG1_getStr(sv, svLen, self.d, io_mode)
-
-
-        # for i in range(0, 5000):
-        #     sv = create_string_buffer(b"\x00" * svLen)
-        #     print(i, "{0:b}".format(i), lib.mclBnG1_getStr(sv, svLen, self.d, i), sv.value)
-
-
         if ret == 0:
             raise ValueError("MCl failed to return from G1:getStr, ioMode=" + str(io_mode))
         return sv.value
@@ -904,23 +895,16 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
         # define MCLBN_IO_BINARY 2
         # define MCLBN_IO_DECIMAL 10
         # define MCLBN_IO_HEX_BIG_ENDIAN 16
+        # define MCLBN_IO_BYTES 32
         # define MCLBN_IO_0xHEX_LITTLE_ENDIAN 144
-        # define MCLBN_IO_EC_PROJ 1024  // Jacobi coordinate for G1/G2
-        # define MCLBN_IO_SERIALIZE_HEX_STR 2048
+        # define MCLBN_IO_EC_PROJ 1024  // Jacobi coordinate for G1/G2  // 0
+        # define MCLBN_IO_SERIALIZE_HEX_STR 2048  // 144
         """
         svLen = 1024
         sv = create_string_buffer(b"\x00" * svLen)
         ret = lib.mclBnG2_getStr(sv, svLen, self.d, io_mode)
-
-
-        # for i in range(0, 5000):
-        #     sv = create_string_buffer(b"\x00" * svLen)
-        #     print(i, "{0:b}".format(i), lib.mclBnG2_getStr(sv, svLen, self.d, i), sv.value)
-
-
         if ret == 0:
             print("MCl failed to return from G2:getStr, ioMode=" + str(io_mode))
-            # raise ValueError("MCl failed to return from G2:getStr, ioMode=" + str(io_mode))
         return sv.value
 
     def serialize(self):
@@ -958,7 +942,6 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
         z = result.d
         x = self.d
         libretval = lib.mclBn_precomputeG2(z, x)
-        #print([e[0] for e in enumerate(list(z)) if e[1] == 0][0:10])
         if libretval == -1:
             raise ValueError("MCl library call failed.")
         return result
@@ -989,336 +972,6 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
         return retval
 
 
-
-def big_test():
-
-
-    # print("init")
-    # mclBn_init()
-    # print("init'd")
-
-    P = Fr()
-    Q = Fr()
-    P.setRnd()
-    Q.setInt(7)
-    # Q.setStr("34982034824")
-    R = P + Q
-    S = Q + P
-    assert(R == S)
-
-
-
-    # p = (c_uint64 * 4) * 3
-    # lib.mclBnG1_getBasePoint(p)
-
-
-
-
-
-
-
-    g = G1()
-    g.hash("Hello, World")
-    print(g.tostr())
-
-    p = G1()
-    p.hash("Hello, Wyatt John Howe")
-    print(p.tostr())
-
-    q = G1()
-    print(g.equals(q))
-    is_zero = q.zero()
-    print("This point is" + ("" if is_zero else " not") + " zero.")
-    q.hash("Hello, World")
-
-
-    # print(5)
-    # lib.mclBnG1_isValid(q)
-    # is_valid = q.valid()
-    # print(6)
-    # print("This point is valid." if is_valid else "invalid!")
-    q.print_valid()
-
-    is_zero = q.zero()
-    print("This point is" + ("" if is_zero else " not") + " zero.")
-
-
-    print(g.equals(p))
-    print(g.equals(q))
-
-
-
-    # print(bytes(g.mul(p).add(p).sub(p).sub(p))[20:40])
-    # print(bytes(p.mul(g).sub(p))[20:40])
-
-
-    print(g.add(p).sub(p).sub(p).serialize())
-    print(g.sub(p).serialize())
-
-
-    print("g", g.serialize())
-
-    print("g", g.deserialize(g.serialize()))
-
-    print("g", g.deserialize(g.serialize()).serialize())
-    # print("g", p.deserialize(g.serialize()).serialize())
-    print("p", g.deserialize(p.serialize()).serialize())
-
-    print("\n\n\n\n\n")
-
-
-
-
-
-    s = Fr(); s.setRnd()
-    t = Fr(); t.setInt(7)
-
-
-    print(g.mul(s).mul(t).serialize())
-    print(g.mul(t).mul(s).serialize())
-    print(g.mul(t).mul(t).serialize())
-    print(g.mul(s).mul(s).serialize())
-
-
-
-
-    # r = G1().randomize()
-    # r.print_valid()
-    # print(bytes(r.serialize()))
-
-
-
-    r1 = G1().randomize()
-    r1.print_valid()
-    print(bytes(r1.serialize()))
-
-    r2 = G1().randomize()
-    r2.print_valid()
-    print(bytes(r2.serialize()))
-
-    print(r1.equals(r1))
-    print(r2.equals(r2))
-    print(r1.equals(r2))
-    print(r2.equals(r1))
-
-
-    print(
-        r1.mul(s).mul(t).equals(
-            r1.mul(t).mul(s)
-        )
-    )
-
-
-
-
-    ###################################################
-
-
-
-
-    # print("init")
-    # mclBn_init()
-    # print("init'd")
-
-    P = Fr()
-    Q = Fr()
-    P.setRnd()
-    Q.setInt(7)
-    # Q.setStr("34982034824")
-    R = P + Q
-    S = Q + P
-    assert(R == S)
-
-
-
-    # p = (c_uint64 * 4) * 3
-    # lib.mclBnG2_getBasePoint(p)
-
-
-
-
-
-
-    g = G2()
-    print("1")
-    g.hash("Hello, World")
-    print("2")
-
-    p = G2()
-    print("3")
-    p.hash("Hello, Wyatt")
-    print("4")
-
-    q = G2()
-    print("4")
-    print(g.equals(q))
-    print("4")
-    is_zero = q.zero()
-    print("This point is" + ("" if is_zero else " not") + " zero.")
-    q.hash("Hello, World")
-
-
-    # print(5)
-    # lib.mclBnG2_isValid(q)
-    # is_valid = q.valid()
-    # print(6)
-    # print("This point is valid." if is_valid else "invalid!")
-    q.print_valid()
-
-    is_zero = q.zero()
-    print("This point is" + ("" if is_zero else " not") + " zero.")
-
-
-    print(g.equals(p))
-    print(g.equals(q))
-
-
-
-    # print(bytes(g.mul(p).add(p).sub(p).sub(p))[20:40])
-    # print(bytes(p.mul(g).sub(p))[20:40])
-
-
-    print(g.add(p).sub(p).sub(p).serialize())
-    print(g.sub(p).serialize())
-
-
-    print("g", g.serialize())
-
-    print("g", g.deserialize(g.serialize()))
-
-    print("g", g.deserialize(g.serialize()).serialize())
-    # print("g", p.deserialize(g.serialize()).serialize())
-    print("p", g.deserialize(p.serialize()).serialize())
-
-    print("\n\n\n\n\n")
-
-
-
-
-
-    s = Fr(); s.setRnd()
-    # s = Fr(); s.setInt(7)
-    t = Fr(); t.setInt(7)
-    # s.tostr()
-
-    print(g.mul(s).mul(t).serialize())
-    print(g.mul(t).mul(s).serialize())
-    print(g.mul(t).mul(t).serialize())
-    print(g.mul(s).mul(s).serialize())
-
-
-
-
-    # r = G2().randomize()
-    # r.print_valid()
-    # print(bytes(r.serialize()))
-
-
-
-    r1 = G2().randomize()
-    r1.print_valid()
-    print(bytes(r1.serialize()))
-
-    r2 = G2().randomize()
-    r2.print_valid()
-    print(bytes(r2.serialize()))
-
-    print(r1.equals(r1))
-    print(r2.equals(r2))
-    print(r1.equals(r2))
-    print(r2.equals(r1))
-
-
-    print(
-        r1.mul(s).mul(t).equals(
-            r1.mul(t).mul(s)
-        )
-    )
-
-
-
-    print("\n\n\n\n\n")
-    ###################################################
-
-
-
-    r1 = G1().randomize()
-    r1.print_valid()
-    print(bytes(r1.serialize()));print()
-
-
-    r2 = G2().randomize()
-    r2.print_valid()
-    print(bytes(r2.serialize()));print()
-
-
-    r3 = r1.pairing(r2)
-    print(bytes(r3.serialize()));print()
-
-
-    r4 = r2.pairing(r1)
-    print(bytes(r4.serialize()));print()
-
-    print(r3.equals(r4))
-
-
-    r5 = r1.mul(s).pairing(r2)
-    print(bytes(r5.serialize()));print()
-
-
-    r6 = r1.pairing(r2.mul(s))
-    print(bytes(r6.serialize()));print()
-
-
-    print(r5.equals(r6))
-    # print(
-    #     (r1.pairing(r2.mul(s))), (
-    #     ((r1.mul(s)).pairing(r2))
-    # ))
-
-
-
-
-
-    for _ in range(1,10):
-        pass
-
-
-
-
-    # bytes(P)
-    # print(bytes(g))
-    # print(bytes(p))
-    # print(bytes(q))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def test_pairing_algebra():
     a = Fr()
     b = Fr()
@@ -1343,9 +996,11 @@ def test_pairing_algebra():
     return True  # print("pass")
 
 
-# Press the green button in the gutter to run the script.
+assert(test_pairing_algebra())  # Does not return on fail.  Vacuous assert.
+
+
 if __name__ == '__main__':
-    big_test()
+    # big_test()
 
     # # print_('testing')
     #
@@ -1353,8 +1008,6 @@ if __name__ == '__main__':
     #     test_pairing_algebra()
     #
     # test_pairing_preeoptimization()
-
-
 
     import timeit
 
@@ -1401,7 +1054,9 @@ if __name__ == '__main__':
     print(str(round(1000*elapsed_avg, 2))+"ms per operation")
     print()
 
+    print("Disabling precomputation...")
     disable_memoization()
+    print()
 
 
     P = G1().hash("pp")
@@ -1446,6 +1101,3 @@ if __name__ == '__main__':
     print(elapsed, "seconds elapsed")
     print(str(round(1000*elapsed_avg, 2))+"ms per operation")
     print()
-
-
-assert(test_pairing_algebra())  # Does not return on fail.  Vacuous assert.
