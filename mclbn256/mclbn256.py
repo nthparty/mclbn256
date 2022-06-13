@@ -330,11 +330,8 @@ class lib:
 #
 # Load DLL or DyLib from the wheel (or disk?)
 #
-def __init():
-    global lib
-    lib = cdll.LoadLibrary(lib_path)
-    if lib.mclBn_init(mclBn_CurveFp254BNb, MCLBN_COMPILED_TIME_VAR): print("Failed to load MCl's BN254 binary.")
-__init()
+lib = cdll.LoadLibrary(lib_path)
+if lib.mclBn_init(mclBn_CurveFp254BNb, MCLBN_COMPILED_TIME_VAR): print("Failed to load MCl's BN254 binary.")
 
 #
 # Configuration options
@@ -972,28 +969,31 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
         return retval
 
 
-def test_pairing_algebra():
-    a = Fr()
+def assert_bilinearity():
+    a = Fr()  # random by default
     b = Fr()
-
     P = G1().hash("1")
     Q = G2().hash("1")
-
     assert(P.valid())
     assert(Q.valid())
 
     aP = P * a
     bQ = Q * b
-
     e = P @ Q
-
     assert(e ** a == aP @ Q)
-
     assert(e ** b == P @ bQ)
-
     assert(e ** Fr(3) == e * e * e)
 
-    return True  # print("pass")
+    s = Fr(646453563245)
+    t = Fr(857462736753)
+    p = G1().hash("some row")
+    q = G2().hash("another row")
+    assert(p.valid())
+    assert(q.valid())
+
+    assert(((p * s) @ (q * t)) == (p @ (q * s * t)))
+    assert(((p * s * ~t) @ (q * t)) == (p @ (q * s)))
+    assert(((p * s) @ q) == ((p * ~t) @ (q * s * t)))
 
 
-assert(test_pairing_algebra())  # Does not return on fail.  Vacuous assert.
+assert_bilinearity()
