@@ -563,12 +563,12 @@ class GT(Structure):  # mclBnGT type in C
         """
         svLen = 1024
         sv = create_string_buffer(b"\x00" * svLen)
-        ret = lib.mclBnFr_getStr(sv, svLen, self.d, io_mode)
+        ret = lib.mclBnGT_getStr(sv, svLen, self.d, io_mode)
 
 
         # for i in range(0, 5000):
         #     sv = create_string_buffer(b"\x00" * svLen)
-        #     print(i, "{0:b}".format(i), lib.mclBnFr_getStr(sv, svLen, self.d, i), sv.value)
+        #     print(i, "{0:b}".format(i), lib.mclBnGT_getStr(sv, svLen, self.d, i), sv.value)
 
 
         if ret == 0:
@@ -726,12 +726,12 @@ class G1(Structure):  # mclBnG1 type in C
         """
         svLen = 1024
         sv = create_string_buffer(b"\x00" * svLen)
-        ret = lib.mclBnFr_getStr(sv, svLen, self.d, io_mode)
+        ret = lib.mclBnG1_getStr(sv, svLen, self.d, io_mode)
 
 
         # for i in range(0, 5000):
         #     sv = create_string_buffer(b"\x00" * svLen)
-        #     print(i, "{0:b}".format(i), lib.mclBnFr_getStr(sv, svLen, self.d, i), sv.value)
+        #     print(i, "{0:b}".format(i), lib.mclBnG1_getStr(sv, svLen, self.d, i), sv.value)
 
 
         if ret == 0:
@@ -910,12 +910,12 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
         """
         svLen = 1024
         sv = create_string_buffer(b"\x00" * svLen)
-        ret = lib.mclBnFr_getStr(sv, svLen, self.d, io_mode)
+        ret = lib.mclBnG2_getStr(sv, svLen, self.d, io_mode)
 
 
         # for i in range(0, 5000):
         #     sv = create_string_buffer(b"\x00" * svLen)
-        #     print(i, "{0:b}".format(i), lib.mclBnFr_getStr(sv, svLen, self.d, i), sv.value)
+        #     print(i, "{0:b}".format(i), lib.mclBnG2_getStr(sv, svLen, self.d, i), sv.value)
 
 
         if ret == 0:
