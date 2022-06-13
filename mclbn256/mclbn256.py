@@ -402,12 +402,16 @@ class Fr(Structure):
             raise ValueError("MCl failed to return from GT:serialize")
         return sv.value if not raw else sv.raw[:ret_len]
 
-    def deserialize(self, s, length=None):
+    def _deserialize(self, s, length=None):
         sv = create_string_buffer(s)
-        ret_len = lib.mclBnGT_deserialize(self.d, sv, length or len(sv))  # or len(s)?
+        ret_len = lib.mclBnFr_deserialize(self.d, sv, length or len(sv))  # or len(s)?
         if ret_len == 0:
             raise ValueError("MCl failed to return from GT:deserialize")
         return self
+
+    @classmethod
+    def deserialize(cls, s, length=None):
+        return Fr()._deserialize(s, length)
 
     def isZero(self):
         return bool(lib.mclBnFr_isZero(self.d))
@@ -583,12 +587,16 @@ class GT(Structure):  # mclBnGT type in C
             raise ValueError("MCl failed to return from GT:serialize")
         return sv.value if not raw else sv.raw[:ret_len]
 
-    def deserialize(self, s, length=None):
+    def _deserialize(self, s, length=None):
         sv = create_string_buffer(s)
         ret_len = lib.mclBnGT_deserialize(self.d, sv, length or len(sv))  # or len(s)?
         if ret_len == 0:
             raise ValueError("MCl failed to return from GT:deserialize")
         return self
+
+    @classmethod
+    def deserialize(cls, s, length=None):
+        return GT()._deserialize(s, length)
 
     def equals(self, other):# -> int
         x = self.d
@@ -610,6 +618,14 @@ class GT(Structure):  # mclBnGT type in C
 class G1(Structure):  # mclBnG1 type in C
     _fields_ = [("d", mclBnG1_bytes)]
 
+    def __init__(self, value=None, *args, **kw):
+        super().__init__(*args, **kw)
+        if value:
+            self.hash(value)
+        else:
+            # self.randomize()
+            pass
+
     def __str__(self):
         return self.tostr().decode()
 
@@ -629,6 +645,10 @@ class G1(Structure):  # mclBnG1 type in C
         if not ret == 0:
             raise ValueError("MCl library call failed.")
         return self
+
+    @classmethod
+    def fromhash(cls, h):
+        return G1().hash(h)  # same as `G1(h)`
 
     def valid(self):
         return bool(lib.mclBnG1_isValid(self.d))
@@ -747,12 +767,16 @@ class G1(Structure):  # mclBnG1 type in C
             raise ValueError("MCl failed to return from G1:serialize")
         return sv.value if not raw else sv.raw[:ret_len]
 
-    def deserialize(self, s, length=None):
+    def _deserialize(self, s, length=None):
         sv = create_string_buffer(s)
-        ret_len = lib.mclBnGT_deserialize(self.d, sv, length or len(sv))  # or len(s)?
+        ret_len = lib.mclBnG1_deserialize(self.d, sv, length or len(sv))  # or len(s)?
         if ret_len == 0:
             raise ValueError("MCl failed to return from G1:deserialize")
         return self
+
+    @classmethod
+    def deserialize(cls, s, length=None):
+        return G1()._deserialize(s, length)
 
     def pairing(self, other):# -> void
         #assert(type(other) is G2)
@@ -797,6 +821,14 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
     _fields_ = [("d", mclBnG2_bytes)]
     coeff = None
 
+    def __init__(self, value=None, *args, **kw):
+        super().__init__(*args, **kw)
+        if value:
+            self.hash(value)
+        else:
+            # self.randomize()
+            pass
+
     def __str__(self):
         return self.tostr().decode()
 
@@ -814,6 +846,10 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
         if not ret == 0:
             raise ValueError("MCl library call failed.")
         return self
+
+    @classmethod
+    def fromhash(cls, h):
+        return G2().hash(h)  # same as `G2(h)`
 
     def valid(self):
         return bool(lib.mclBnG2_isValid(self.d))
@@ -932,12 +968,16 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
             raise ValueError("MCl failed to return from G2:serialize")
         return sv.value if not raw else sv.raw[:ret_len]
 
-    def deserialize(self, s, length=None):
+    def _deserialize(self, s, length=None):
         sv = create_string_buffer(s)
-        ret_len = lib.mclBnGT_deserialize(self.d, sv, length or len(sv))  # or len(s)?
+        ret_len = lib.mclBnG2_deserialize(self.d, sv, length or len(sv))  # or len(s)?
         if ret_len == 0:
             raise ValueError("MCl failed to return from G2:deserialize")
         return self
+
+    @classmethod
+    def deserialize(cls, s, length=None):
+        return G2()._deserialize(s, length)
 
     def pairing(self, other):# -> void
         # assert(type(other) is G1)
@@ -1015,4 +1055,52 @@ def assert_bilinearity():
     assert(((p * s) @ q) == ((p * ~t) @ (q * s * t)))
 
 
-assert_bilinearity()
+def assert_serializable():
+    s = Fr(646453563245)
+    t = Fr(857462736753)
+    p = G1().hash("some row")
+    q = G2().hash("another row")
+    assert(p.valid())
+    assert(q.valid())
+
+    #disable_memoization()
+    for _ in range(32):
+        s.randomize()
+        t.randomize()
+        for _ in range(32):
+            p.randomize()
+            q.randomize()
+            e = p @ q
+
+            for mode in [0, 10, 16, 32, 144, 1024, 2048]:  # Binary mode (2) will likely require a length to be passed for it to work.
+                assert(s == Fr.new_fromstr(s.tostr(mode), mode))
+                assert(p == G1.new_fromstr(p.tostr(mode), mode))
+                assert(q == G2.new_fromstr(q.tostr(mode), mode))
+                assert(e == GT.new_fromstr(e.tostr(mode), mode))
+
+            assert(s == Fr.deserialize(s.serialize()))
+            assert(p == G1.deserialize(p.serialize()))
+            assert(q == G2.deserialize(q.serialize()))
+            assert(e == GT.deserialize(e.serialize()))
+
+
+def assert_sane():
+    s = Fr()
+    t = Fr()
+    p = G1("p")
+    q = G2("q")
+    assert(p.valid())
+    assert(q.valid())
+
+    e = (p * s) @ q
+    assert(q * s * t @ (p * ~t) == e)
+
+    assert (s == Fr.deserialize(s.serialize()))
+    assert (p == G1.deserialize(p.serialize()))
+    assert (q == G2.deserialize(q.serialize()))
+    assert (e == GT.deserialize(e.serialize()))
+
+
+# assert_bilinearity()
+# assert_serializable()
+assert_sane()
