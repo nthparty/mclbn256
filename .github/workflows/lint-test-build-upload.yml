@@ -54,7 +54,7 @@ jobs:
            mv wheelhouse/mclbn*.whl mclbn-wheelhouse/
       - uses: actions/upload-artifact@v1
         with:
-          name: "mclbn256-0.2.0-manylinux1-${{ matrix.PYTHON }}"
+          name: "mclbn256-0.2.1-manylinux1-${{ matrix.PYTHON }}"
           path: mclbn-wheelhouse/
   macos:
     runs-on: macOS-latest
@@ -112,7 +112,7 @@ jobs:
           mv wheelhouse/mclbn*.whl mclbn-wheelhouse/
       - uses: actions/upload-artifact@v1
         with:
-          name: "mclbn-0.2.0-macOS-${{ matrix.PYTHON.VERSION }}"
+          name: "mclbn-0.2.1-macOS-${{ matrix.PYTHON.VERSION }}"
           path: mclbn-wheelhouse/
   macos-arm:
     runs-on: macOS-11
@@ -170,7 +170,7 @@ jobs:
           mv wheelhouse/mclbn*.whl mclbn-wheelhouse/
       - uses: actions/upload-artifact@v1
         with:
-          name: "mclbn-0.2.0-macOS-arm-${{ matrix.PYTHON.VERSION }}"
+          name: "mclbn-0.2.1-macOS-arm-${{ matrix.PYTHON.VERSION }}"
           path: mclbn-wheelhouse/
 
 
