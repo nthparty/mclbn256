@@ -35,9 +35,11 @@ jobs:
           cp mcl-*/lib/libmcl.so mclbn256/lib
           .venv/bin/python -m build
 
-          mkdir tmpwheelhouse
-          mv dist/mclbn*.whl tmpwheelhouse
+          # mkdir tmpwheelhouse
+          # mv dist/mclbn*.whl tmpwheelhouse
           # auditwheel repair tmpwheelhouse/mclbn*.whl -w wheelhouse/
+          mkdir wheelhouse
+          mv dist/mclbn*.whl wheelhouse
       - name: Test wheel installation.
         run: .venv/bin/pip install -f wheelhouse --no-index mclbn256
       - name: Lint and test module (and compiled libsodium shared library file).
