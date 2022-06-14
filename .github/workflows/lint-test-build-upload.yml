@@ -7,7 +7,7 @@ jobs:
     container: quay.io/pypa/manylinux2014_x86_64
     strategy:
       matrix:
-        PYTHON: ["cp39-cp39"]
+        PYTHON: ["cp37-cp37m", "cp38-cp38", "cp39-cp39"]
     name: "Python ${{ matrix.PYTHON }} for manylinux2014"
     steps:
       - uses: actions/checkout@v2
@@ -33,17 +33,9 @@ jobs:
           cp libmclbn256.* mclbn256
           .venv/bin/python -m build
 
-
-
-          #mkdir tmpwheelhouse
-          #REGEX="cp3([0-9])*"
-          #if [[ "${{ matrix.PYTHON }}" =~ $REGEX ]]; then
-          #    PY_LIMITED_API="--py-limited-api=cp3${BASH_REMATCH[1]}"
-          #fi
-          #LIBSODIUM_MAKE_ARGS="-j$(nproc)" .venv/bin/python setup.py bdist_wheel $PY_LIMITED_API
-          #cp build/lib*/rbcl/_sodium*.so rbcl
-          #mv dist/rbcl*.whl tmpwheelhouse
-          #auditwheel repair tmpwheelhouse/rbcl*.whl -w wheelhouse/
+          mkdir tmpwheelhouse
+          mv dist/mclbn*.whl tmpwheelhouse
+          auditwheel repair tmpwheelhouse/mclbn*.whl -w wheelhouse/
       - name: Lint and test module (and compiled libsodium shared library file).
         run: |
           #.venv/bin/pip install -U pylint coverage coveralls nose
@@ -56,7 +48,7 @@ jobs:
       - name: Upload wheel file.
         run: |
            mkdir mclbn-wheelhouse
-           mv dist/mclbn*.whl mclbn-wheelhouse/
+           mv wheelhouse/mclbn*.whl mclbn-wheelhouse/
       - uses: actions/upload-artifact@v1
         with:
           name: "mclbn256-0.2.0-manylinux1-${{ matrix.PYTHON }}"
