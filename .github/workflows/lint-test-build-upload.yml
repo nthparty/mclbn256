@@ -37,7 +37,7 @@ jobs:
 
           mkdir tmpwheelhouse
           mv dist/mclbn*.whl tmpwheelhouse
-          auditwheel repair tmpwheelhouse/mclbn*.whl -w wheelhouse/
+          # auditwheel repair tmpwheelhouse/mclbn*.whl -w wheelhouse/
       - name: Test wheel installation.
         run: .venv/bin/pip install -f wheelhouse --no-index mclbn256
       - name: Lint and test module (and compiled libsodium shared library file).
