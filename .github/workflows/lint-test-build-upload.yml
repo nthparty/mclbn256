@@ -7,7 +7,7 @@ jobs:
     container: quay.io/pypa/manylinux2014_x86_64
     strategy:
       matrix:
-        PYTHON: ["cp37-cp37m", "cp38-cp38", "cp39-cp39"]
+        PYTHON: ["cp39-cp39"]
     name: "Python ${{ matrix.PYTHON }} for manylinux2014"
     steps:
       - uses: actions/checkout@v2
@@ -18,199 +18,48 @@ jobs:
           /opt/python/${{ matrix.PYTHON }}/bin/python -m virtualenv .venv
       - name: Install Python dependencies for build process.
         run: .venv/bin/pip install -U pip setuptools wheel cffi
-      - name: Download libsodium source tree archive and extract it.
+      - name: Download mcl source tree archive and extract it.
         run: |
-          wget https://github.com/jedisct1/libsodium/releases/download/1.0.18-RELEASE/libsodium-1.0.18.tar.gz
-          mv libsodium-1.0.18.tar.gz rbcl/libsodium.tar.gz
+          wget https://github.com/herumi/mcl/archive/refs/tags/v1.61.tar.gz
+          tar -xvzf *.tar.gz
       - name: Build wheel file.
         run: |
-          mkdir tmpwheelhouse
-          REGEX="cp3([0-9])*"
-          if [[ "${{ matrix.PYTHON }}" =~ $REGEX ]]; then
-              PY_LIMITED_API="--py-limited-api=cp3${BASH_REMATCH[1]}"
-          fi
-          LIBSODIUM_MAKE_ARGS="-j$(nproc)" .venv/bin/python setup.py bdist_wheel $PY_LIMITED_API
-          cp build/lib*/rbcl/_sodium*.so rbcl
-          mv dist/rbcl*.whl tmpwheelhouse
-          auditwheel repair tmpwheelhouse/rbcl*.whl -w wheelhouse/
+          cd mcl*
+          make
+          ls lib
+          rm lib/libmclbn256.a
+          cp lib/libmclbn256.* ..
+          cd ..
+          cp libmclbn256.* mclbn256
+          .venv/bin/python -m build
+
+          cp dist/*.whl
+
+
+
+          #mkdir tmpwheelhouse
+          #REGEX="cp3([0-9])*"
+          #if [[ "${{ matrix.PYTHON }}" =~ $REGEX ]]; then
+          #    PY_LIMITED_API="--py-limited-api=cp3${BASH_REMATCH[1]}"
+          #fi
+          #LIBSODIUM_MAKE_ARGS="-j$(nproc)" .venv/bin/python setup.py bdist_wheel $PY_LIMITED_API
+          #cp build/lib*/rbcl/_sodium*.so rbcl
+          #mv dist/rbcl*.whl tmpwheelhouse
+          #auditwheel repair tmpwheelhouse/rbcl*.whl -w wheelhouse/
       - name: Lint and test module (and compiled libsodium shared library file).
         run: |
-          .venv/bin/pip install -U pylint coverage coveralls nose
-          .venv/bin/python -m pylint rbcl # Check against linting rules.
-          .venv/bin/python rbcl/rbcl.py -v # Run doctests.
-          .venv/bin/python -m nose --cover-erase # Test using nose.
-          .venv/bin/python -m coveralls --service=github # Submit to coveralls.
+          #.venv/bin/pip install -U pylint coverage coveralls nose
+          #.venv/bin/python -m pylint rbcl # Check against linting rules.
+          #.venv/bin/python rbcl/rbcl.py -v # Run doctests.
+          #.venv/bin/python -m nose --cover-erase # Test using nose.
+          #.venv/bin/python -m coveralls --service=github # Submit to coveralls.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload wheel file.
         run: |
-           mkdir rbcl-wheelhouse
-           mv wheelhouse/rbcl*.whl rbcl-wheelhouse/
+           mkdir mclbn-wheelhouse
+           mv dist/mclbn*.whl mclbn-wheelhouse/
       - uses: actions/upload-artifact@v1
         with:
-          name: "rbcl-2.0.0-manylinux1-${{ matrix.PYTHON }}"
-          path: rbcl-wheelhouse/
-  macos:
-    runs-on: macOS-latest
-    strategy:
-      matrix:
-        PYTHON:
-          - VERSION: '3.8'
-            ABI_VERSION: '3.6'
-            DOWNLOAD_URL: 'https://www.python.org/ftp/python/3.8.2/python-3.8.2-macosx10.9.pkg'
-            BIN_PATH: '/Library/Frameworks/Python.framework/Versions/3.8/bin/python3'
-    name: "Python ${{ matrix.PYTHON.VERSION }} for ABI ${{ matrix.PYTHON.ABI_VERSION }} on macOS"
-    steps:
-      - uses: actions/checkout@v2
-      - name: Install Python.
-        run: |
-          curl "$PYTHON_DOWNLOAD_URL" -o python.pkg
-          sudo installer -pkg python.pkg -target /
-          ${{ matrix.PYTHON.BIN_PATH }} -m pip install -U virtualenv
-          ${{ matrix.PYTHON.BIN_PATH }} -m virtualenv venv
-        env:
-          PYTHON_DOWNLOAD_URL: ${{ matrix.PYTHON.DOWNLOAD_URL }}
-      - name: Install Python dependencies for build process.
-        run: venv/bin/pip install -U pip setuptools wheel cffi
-      - name: Download libsodium source tree archive and extract it.
-        run: |
-          wget https://github.com/jedisct1/libsodium/releases/download/1.0.18-RELEASE/libsodium-1.0.18.tar.gz
-          mv libsodium-1.0.18.tar.gz rbcl/libsodium.tar.gz
-      - name: Build wheel file.
-        run: |
-          mkdir wheelhouse
-          REGEX="3\.([0-9])*"
-          if [[ "$PYTHON_VERSION" =~ $REGEX ]]; then
-              PY_LIMITED_API="--py-limited-api=cp3${BASH_REMATCH[1]}"
-          fi
-          rm -f dist/*.*
-          LIBSODIUM_MAKE_ARGS="-j$(sysctl -n hw.ncpu)" CFLAGS="-mmacosx-version-min=10.9 -march=core2" \
-              venv/bin/python setup.py bdist_wheel $PY_LIMITED_API && mv dist/rbcl*.whl wheelhouse
-          cp build/lib*/rbcl/_sodium*.so rbcl
-        env:
-          PYTHON_VERSION: ${{ matrix.PYTHON.ABI_VERSION }}
-      - name: Test wheel installation.
-        run: venv/bin/pip install -f wheelhouse --no-index rbcl
-      - name: Lint and test module (and compiled libsodium shared library file).
-        run: |
-          venv/bin/pip install -U pip pylint coverage nose
-          venv/bin/python -m pylint rbcl # Check against linting rules.
-          venv/bin/python rbcl/rbcl.py -v # Run doctests.
-          venv/bin/python -m nose --cover-erase # Test using nose.
-      - name: Upload wheel file.
-        run: |
-          mkdir rbcl-wheelhouse
-          mv wheelhouse/rbcl*.whl rbcl-wheelhouse/
-      - uses: actions/upload-artifact@v1
-        with:
-          name: "rbcl-2.0.0-macOS-${{ matrix.PYTHON.VERSION }}"
-          path: rbcl-wheelhouse/
-  macos-arm:
-    runs-on: macOS-11
-    strategy:
-      matrix:
-        PYTHON:
-          - VERSION: '3.10'
-            ABI_VERSION: '3.6'
-            DOWNLOAD_URL: 'https://www.python.org/ftp/python/3.10.1/python-3.10.1-macos11.pkg'
-            BIN_PATH: '/Library/Frameworks/Python.framework/Versions/3.10/bin/python3'
-    name: "Python ${{ matrix.PYTHON.VERSION }} for ABI ${{ matrix.PYTHON.ABI_VERSION }} on macOS"
-    steps:
-      - uses: actions/checkout@v2
-      - name: Install Python.
-        run: |
-          curl "$PYTHON_DOWNLOAD_URL" -o python.pkg
-          sudo installer -pkg python.pkg -target /
-          ${{ matrix.PYTHON.BIN_PATH }} -m pip install -U virtualenv
-          ${{ matrix.PYTHON.BIN_PATH }} -m virtualenv venv
-        env:
-          PYTHON_DOWNLOAD_URL: ${{ matrix.PYTHON.DOWNLOAD_URL }}
-      - name: Install Python dependencies for build process.
-        run: venv/bin/pip install -U pip setuptools wheel cffi
-      - name: Download libsodium source tree archive and extract it.
-        run: |
-          wget https://github.com/jedisct1/libsodium/releases/download/1.0.18-RELEASE/libsodium-1.0.18.tar.gz
-          mv libsodium-1.0.18.tar.gz rbcl/libsodium.tar.gz
-      - name: Build wheel file.
-        run: |
-          mkdir wheelhouse
-          REGEX="3\.([0-9])*"
-          if [[ "$PYTHON_VERSION" =~ $REGEX ]]; then
-              PY_LIMITED_API="--py-limited-api=cp3${BASH_REMATCH[1]}"
-          fi
-          rm -f dist/*.*
-          LIBSODIUM_MAKE_ARGS="-j$(sysctl -n hw.ncpu)" MACOSX_DEPLOYMENT_TARGET="10.10" CFLAGS="-arch arm64 -arch x86_64" ARCHFLAGS="-arch arm64 -arch x86_64" _PYTHON_HOST_PLATFORM="macosx-10.9-universal2" \
-              venv/bin/python setup.py bdist_wheel $PY_LIMITED_API && mv dist/rbcl*.whl wheelhouse
-          cp build/lib*/rbcl/_sodium*.so rbcl
-        env:
-          PYTHON_VERSION: ${{ matrix.PYTHON.ABI_VERSION }}
-      - name: Test wheel installation.
-        run: venv/bin/pip install -f wheelhouse --no-index rbcl
-      - name: Lint and test module (and compiled libsodium shared library file).
-        run: |
-          venv/bin/pip install -U pip pylint coverage nose
-          venv/bin/python -m pylint rbcl # Check against linting rules.
-          venv/bin/python rbcl/rbcl.py -v # Run doctests.
-          #venv/bin/python -m nose --cover-erase # Test using nose.  # RbCl 0.2.0 has succeeded before but but errored at end [due to nose in 3.10 bug](https://github.com/nose-devs/nose/issues/1099)
-      - name: Upload wheel file.
-        run: |
-          mkdir rbcl-wheelhouse
-          mv wheelhouse/rbcl*.whl rbcl-wheelhouse/
-      - uses: actions/upload-artifact@v1
-        with:
-          name: "rbcl-0.2.0-macOS-arm-${{ matrix.PYTHON.VERSION }}"
-          path: rbcl-wheelhouse/
-  windows:
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        WINDOWS:
-          - {ARCH: 'x86', SODIUM_ARCH: 'Win32', VS_ARCH: 'x86'}
-          - {ARCH: 'x64', SODIUM_ARCH: 'x64', VS_ARCH: 'amd64'}
-        PYTHON:
-          - {VERSION: "3.9", SODIUM_MSVC_VERSION: "v142", "USE_ABI3": "true", "ABI_VERSION": "cp36"}
-    name: "${{ matrix.PYTHON.VERSION }} ${{ matrix.WINDOWS.ARCH }} ${{ matrix.PYTHON.ABI_VERSION }}"
-    steps:
-      - uses: actions/checkout@v2
-      - name: Install Python.
-        uses: actions/setup-python@v2.2.2
-        with:
-          python-version: ${{ matrix.PYTHON.VERSION }}
-          architecture: ${{ matrix.WINDOWS.ARCH }}
-      - name: Install Python dependencies for build process.
-        run: python -m pip install -U pip setuptools wheel cffi
-        shell: bash
-      - name: Download and extract libsodium dynamic library file.
-        run: |
-          wget -O c:\libsodium-1.0.18-msvc.zip https://github.com/jedisct1/libsodium/releases/download/1.0.18-RELEASE/libsodium-1.0.18-msvc.zip
-          Expand-Archive c:\libsodium-1.0.18-msvc.zip -DestinationPath c:\
-        shell: powershell
-      - name: Add environment variables for libsodium.
-        run: |
-          echo "INCLUDE=C:/libsodium/include;$INCLUDE" >> $GITHUB_ENV
-          echo "LIB=C:/libsodium/${{ matrix.WINDOWS.SODIUM_ARCH }}/release/${{ matrix.PYTHON.SODIUM_MSVC_VERSION }}/static;$LIB" >> $GITHUB_ENV
-        shell: bash
-      - name: Build wheel file.
-        run: |
-          mkdir wheelhouse
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat" -no_logo -arch=${{ matrix.WINDOWS.VS_ARCH }}
-          python setup.py bdist_wheel --py-limited-api=${{ matrix.PYTHON.ABI_VERSION }}
-          cp build/lib*/rbcl/_sodium.pyd rbcl
-          mv dist/rbcl*.whl wheelhouse
-        shell: cmd
-      - name: Test wheel installation.
-        run: pip install -f wheelhouse rbcl --no-index
-      - name: Lint and test module (and compiled libsodium shared library file).
-        run: |
-          python -m pip install -U pip pylint coverage nose
-          python -m pylint rbcl # Check against linting rules.
-          python rbcl/rbcl.py -v # Run doctests.
-          python -m nose --cover-erase # Test using nose.
-      - name: Upload wheel file.
-        run: |
-          mkdir rbcl-wheelhouse
-          move wheelhouse\rbcl*.whl rbcl-wheelhouse\
-      - uses: actions/upload-artifact@v1
-        with:
-          name: "rbcl-2.0.0-win-${{ matrix.WINDOWS.ARCH }}-${{ matrix.PYTHON.VERSION }}"
-          path: rbcl-wheelhouse\
+          name: "mclbn256-0.2.0-manylinux1-${{ matrix.PYTHON }}"
+          path: mclbn-wheelhouse/
