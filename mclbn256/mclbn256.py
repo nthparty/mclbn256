@@ -3,13 +3,14 @@ from hashlib import blake2b
 import platform
 import pkg_resources
 
-if platform.system() == 'Windows':
-    lib_name = "libmclbn256.dll"
-elif platform.system() == 'Darwin':
-    lib_name = "libmclbn256.dylib"
-else:
-    lib_name = "libmclbn256.so"
-lib_path = pkg_resources.resource_filename('mclbn256', lib_name)
+def load_library(path_name):
+    if platform.system() == 'Windows':
+        lib_ext = ".dll"
+    elif platform.system() == 'Darwin':
+        lib_ext = ".dylib"
+    else:
+        lib_ext = ".so"
+    return cdll.LoadLibrary(pkg_resources.resource_filename('mclbn256', path_name+lib_ext))
 
 #
 # Define constants needed to replace the C headers
@@ -334,7 +335,8 @@ class lib:
 #
 def __init_lib():
     global lib
-    lib = cdll.LoadLibrary(lib_path)
+    lib = load_library("lib/libmcl")
+    lib = load_library("libmclbn256")
     if lib.mclBn_init(mclBn_CurveFp254BNb, MCLBN_COMPILED_TIME_VAR): print("Failed to load MCl's BN254 binary.")
 __init_lib()
 
