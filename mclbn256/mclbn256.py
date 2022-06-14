@@ -5,6 +5,8 @@ import pkg_resources
 
 if platform.system() == 'Windows':
     lib_name = "libmclbn256.dll"
+elif platform.system() == 'Darwin':
+    lib_name = "libmclbn256.dylib"
 else:
     lib_name = "libmclbn256.so"
 lib_path = pkg_resources.resource_filename('mclbn256', lib_name)

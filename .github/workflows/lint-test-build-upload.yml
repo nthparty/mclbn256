@@ -24,13 +24,13 @@ jobs:
           tar -xvzf *.tar.gz
       - name: Build wheel file.
         run: |
-          cd mcl*
+          cd mcl-*
           make
           ls lib
-          rm lib/libmclbn256.a
-          cp lib/libmclbn256.* ..
           cd ..
-          cp libmclbn256.* mclbn256
+
+          cp mcl-*/lib/libmclbn256.so mclbn256
+          cp mcl-*/lib/libmcl.so mclbn256/lib
           .venv/bin/python -m build
 
           mkdir tmpwheelhouse
@@ -40,7 +40,7 @@ jobs:
         run: .venv/bin/pip install -f wheelhouse --no-index mclbn256
       - name: Lint and test module (and compiled libsodium shared library file).
         run: |
-          # .venv/bin/python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"
+          .venv/bin/python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"
           #.venv/bin/pip install -U pylint coverage coveralls nose
           #.venv/bin/python -m pylint rbcl # Check against linting rules.
           #.venv/bin/python rbcl/rbcl.py -v # Run doctests.
@@ -87,11 +87,10 @@ jobs:
           cd mcl*
           make
           ls lib
-          rm lib/libmclbn256.a
-          cp lib/libmclbn256.* ..
           cd ..
-          cp libmclbn256.* mclbn256
-          mv libmclbn256.dylib libmclbn256.so
+
+          cp mcl-*/lib/libmclbn256.dylib mclbn256
+          cp mcl-*/lib/libmcl.dylib mclbn256/lib
           venv/bin/python -m build
 
           mkdir wheelhouse
@@ -99,10 +98,10 @@ jobs:
         env:
           PYTHON_VERSION: ${{ matrix.PYTHON.ABI_VERSION }}
       - name: Test wheel installation.
-        run: ls wheelhouse
+        run: venv/bin/pip install -f wheelhouse --no-index mclbn256
       - name: Lint and test module (and compiled libsodium shared library file).
         run: |
-          #venv/bin/python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"
+          venv/bin/python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"
           # venv/bin/pip install -U pip pylint coverage nose
           # venv/bin/python -m pylint rbcl # Check against linting rules.
           # venv/bin/python rbcl/rbcl.py -v # Run doctests.
@@ -146,11 +145,10 @@ jobs:
           cd mcl*
           make
           ls lib
-          rm lib/libmclbn256.a
-          cp lib/libmclbn256.* ..
           cd ..
-          cp libmclbn256.* mclbn256
-          mv libmclbn256.dylib libmclbn256.so
+
+          cp mcl-*/lib/libmclbn256.dylib mclbn256
+          cp mcl-*/lib/libmcl.dylib mclbn256/lib
           venv/bin/python -m build
 
           mkdir wheelhouse
@@ -158,10 +156,10 @@ jobs:
         env:
           PYTHON_VERSION: ${{ matrix.PYTHON.ABI_VERSION }}
       - name: Test wheel installation.
-        run: ls wheelhouse
+        run: venv/bin/pip install -f wheelhouse --no-index mclbn256
       - name: Lint and test module (and compiled libsodium shared library file).
         run: |
-          #venv/bin/python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"
+          venv/bin/python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"
           # venv/bin/pip install -U pip pylint coverage nose
           # venv/bin/python -m pylint rbcl # Check against linting rules.
           # venv/bin/python rbcl/rbcl.py -v # Run doctests.
