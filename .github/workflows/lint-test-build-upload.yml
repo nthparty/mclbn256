@@ -40,7 +40,7 @@ jobs:
         run: .venv/bin/pip install -f wheelhouse --no-index mclbn256
       - name: Lint and test module (and compiled libsodium shared library file).
         run: |
-          .venv/bin/python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"
+          # .venv/bin/python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"
           #.venv/bin/pip install -U pylint coverage coveralls nose
           #.venv/bin/python -m pylint rbcl # Check against linting rules.
           #.venv/bin/python rbcl/rbcl.py -v # Run doctests.
@@ -99,7 +99,7 @@ jobs:
         env:
           PYTHON_VERSION: ${{ matrix.PYTHON.ABI_VERSION }}
       - name: Test wheel installation.
-        run: ls wheelhouse#venv/bin/pip install -f wheelhouse --no-index mclbn256
+        run: ls wheelhouse
       - name: Lint and test module (and compiled libsodium shared library file).
         run: |
           #venv/bin/python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"
@@ -158,7 +158,7 @@ jobs:
         env:
           PYTHON_VERSION: ${{ matrix.PYTHON.ABI_VERSION }}
       - name: Test wheel installation.
-        run: ls wheelhouse#venv/bin/pip install -f wheelhouse --no-index mclbn256
+        run: ls wheelhouse
       - name: Lint and test module (and compiled libsodium shared library file).
         run: |
           #venv/bin/python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"
