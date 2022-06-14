@@ -36,8 +36,11 @@ jobs:
           mkdir tmpwheelhouse
           mv dist/mclbn*.whl tmpwheelhouse
           auditwheel repair tmpwheelhouse/mclbn*.whl -w wheelhouse/
+      - name: Test wheel installation.
+        run: .venv/bin/pip install -f wheelhouse --no-index mclbn256
       - name: Lint and test module (and compiled libsodium shared library file).
         run: |
+          python3 -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"
           #.venv/bin/pip install -U pylint coverage coveralls nose
           #.venv/bin/python -m pylint rbcl # Check against linting rules.
           #.venv/bin/python rbcl/rbcl.py -v # Run doctests.
@@ -53,3 +56,123 @@ jobs:
         with:
           name: "mclbn256-0.2.0-manylinux1-${{ matrix.PYTHON }}"
           path: mclbn-wheelhouse/
+  macos:
+    runs-on: macOS-latest
+    strategy:
+      matrix:
+        PYTHON:
+          - VERSION: '3.8'
+            ABI_VERSION: '3.6'
+            DOWNLOAD_URL: 'https://www.python.org/ftp/python/3.8.2/python-3.8.2-macosx10.9.pkg'
+            BIN_PATH: '/Library/Frameworks/Python.framework/Versions/3.8/bin/python3'
+    name: "Python ${{ matrix.PYTHON.VERSION }} for ABI ${{ matrix.PYTHON.ABI_VERSION }} on macOS"
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Python.
+        run: |
+          curl "$PYTHON_DOWNLOAD_URL" -o python.pkg
+          sudo installer -pkg python.pkg -target /
+          ${{ matrix.PYTHON.BIN_PATH }} -m pip install -U virtualenv
+          ${{ matrix.PYTHON.BIN_PATH }} -m virtualenv venv
+        env:
+          PYTHON_DOWNLOAD_URL: ${{ matrix.PYTHON.DOWNLOAD_URL }}
+      - name: Install Python dependencies for build process.
+        run: venv/bin/pip install -U pip setuptools wheel cffi
+      - name: Download libsodium source tree archive and extract it.
+        run: |
+          wget https://github.com/herumi/mcl/archive/refs/tags/v1.61.tar.gz
+          tar -xvzf *.tar.gz
+      - name: Build wheel file.
+        run: |
+          cd mcl*
+          make
+          ls lib
+          rm lib/libmclbn256.a
+          cp lib/libmclbn256.* ..
+          cd ..
+          cp libmclbn256.* mclbn256
+          .venv/bin/python -m build
+
+          mkdir wheelhouse
+          mv dist/mclbn*.whl wheelhouse
+        env:
+          PYTHON_VERSION: ${{ matrix.PYTHON.ABI_VERSION }}
+      - name: Test wheel installation.
+        run: venv/bin/pip install -f wheelhouse --no-index mclbn256
+      - name: Lint and test module (and compiled libsodium shared library file).
+        run: |
+          python3 -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"
+          # venv/bin/pip install -U pip pylint coverage nose
+          # venv/bin/python -m pylint rbcl # Check against linting rules.
+          # venv/bin/python rbcl/rbcl.py -v # Run doctests.
+          # venv/bin/python -m nose --cover-erase # Test using nose.
+      - name: Upload wheel file.
+        run: |
+          mkdir mclbn-wheelhouse
+          mv wheelhouse/mclbn*.whl mclbn-wheelhouse/
+      - uses: actions/upload-artifact@v1
+        with:
+          name: "rbcl-2.0.0-macOS-${{ matrix.PYTHON.VERSION }}"
+          path: rbcl-wheelhouse/
+  macos-arm:
+    runs-on: macOS-11
+    strategy:
+      matrix:
+        PYTHON:
+          - VERSION: '3.10'
+            ABI_VERSION: '3.6'
+            DOWNLOAD_URL: 'https://www.python.org/ftp/python/3.10.1/python-3.10.1-macos11.pkg'
+            BIN_PATH: '/Library/Frameworks/Python.framework/Versions/3.10/bin/python3'
+    name: "Python ${{ matrix.PYTHON.VERSION }} for ABI ${{ matrix.PYTHON.ABI_VERSION }} on macOS"
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Python.
+        run: |
+          curl "$PYTHON_DOWNLOAD_URL" -o python.pkg
+          sudo installer -pkg python.pkg -target /
+          ${{ matrix.PYTHON.BIN_PATH }} -m pip install -U virtualenv
+          ${{ matrix.PYTHON.BIN_PATH }} -m virtualenv venv
+        env:
+          PYTHON_DOWNLOAD_URL: ${{ matrix.PYTHON.DOWNLOAD_URL }}
+      - name: Install Python dependencies for build process.
+        run: venv/bin/pip install -U pip setuptools wheel build
+      - name: Download mcl source tree archive and extract it.
+        run: |
+          wget https://github.com/herumi/mcl/archive/refs/tags/v1.61.tar.gz
+          tar -xvzf *.tar.gz
+      - name: Build wheel file.
+        run: |
+          cd mcl*
+          make
+          ls lib
+          rm lib/libmclbn256.a
+          cp lib/libmclbn256.* ..
+          cd ..
+          cp libmclbn256.* mclbn256
+          .venv/bin/python -m build
+
+          mkdir wheelhouse
+          mv dist/mclbn*.whl wheelhouse
+        env:
+          PYTHON_VERSION: ${{ matrix.PYTHON.ABI_VERSION }}
+      - name: Test wheel installation.
+        run: venv/bin/pip install -f wheelhouse --no-index rbcl
+      - name: Lint and test module (and compiled libsodium shared library file).
+        run: |
+          venv/bin/pip install -U pip pylint coverage nose
+          venv/bin/python -m pylint rbcl # Check against linting rules.
+          venv/bin/python rbcl/rbcl.py -v # Run doctests.
+          #venv/bin/python -m nose --cover-erase # Test using nose.  # RbCl 0.2.0 has succeeded before but but errored at end [due to nose in 3.10 bug](https://github.com/nose-devs/nose/issues/1099)
+      - name: Upload wheel file.
+        run: |
+          mkdir mclbn-wheelhouse
+          mv wheelhouse/mclbn*.whl mclbn-wheelhouse/
+      - uses: actions/upload-artifact@v1
+        with:
+          name: "mclbn-0.2.0-macOS-arm-${{ matrix.PYTHON.VERSION }}"
+          path: mclbn-wheelhouse/
+
+
+
+
+
