@@ -29,6 +29,8 @@ jobs:
           ls lib
           cd ..
 
+          rm mclbn256/libmclbn256.*
+          rm mclbn256/lib/libmcl.*
           cp mcl-*/lib/libmclbn256.so mclbn256
           cp mcl-*/lib/libmcl.so mclbn256/lib
           .venv/bin/python -m build
@@ -89,6 +91,8 @@ jobs:
           ls lib
           cd ..
 
+          rm mclbn256/libmclbn256.*
+          rm mclbn256/lib/libmcl.*
           cp mcl-*/lib/libmclbn256.dylib mclbn256
           cp mcl-*/lib/libmcl.dylib mclbn256/lib
           venv/bin/python -m build
@@ -147,6 +151,8 @@ jobs:
           ls lib
           cd ..
 
+          rm mclbn256/libmclbn256.*
+          rm mclbn256/lib/libmcl.*
           cp mcl-*/lib/libmclbn256.dylib mclbn256
           cp mcl-*/lib/libmcl.dylib mclbn256/lib
           venv/bin/python -m build
