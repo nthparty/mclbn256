@@ -91,6 +91,7 @@ jobs:
           cp lib/libmclbn256.* ..
           cd ..
           cp libmclbn256.* mclbn256
+          mv libmclbn256.dylib libmclbn256.so
           .venv/bin/python -m build
 
           mkdir wheelhouse
@@ -149,6 +150,7 @@ jobs:
           cp lib/libmclbn256.* ..
           cd ..
           cp libmclbn256.* mclbn256
+          mv libmclbn256.dylib libmclbn256.so
           .venv/bin/python -m build
 
           mkdir wheelhouse
