@@ -17,7 +17,7 @@ jobs:
           /opt/python/${{ matrix.PYTHON }}/bin/python -m pip install virtualenv
           /opt/python/${{ matrix.PYTHON }}/bin/python -m virtualenv .venv
       - name: Install Python dependencies for build process.
-        run: .venv/bin/pip install -U pip setuptools wheel cffi
+        run: .venv/bin/pip install -U pip setuptools wheel build
       - name: Download mcl source tree archive and extract it.
         run: |
           wget https://github.com/herumi/mcl/archive/refs/tags/v1.61.tar.gz
