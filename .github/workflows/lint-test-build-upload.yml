@@ -33,8 +33,6 @@ jobs:
           cp libmclbn256.* mclbn256
           .venv/bin/python -m build
 
-          cp dist/*.whl
-
 
 
           #mkdir tmpwheelhouse
