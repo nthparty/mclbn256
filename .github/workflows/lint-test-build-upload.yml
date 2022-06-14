@@ -77,7 +77,7 @@ jobs:
         env:
           PYTHON_DOWNLOAD_URL: ${{ matrix.PYTHON.DOWNLOAD_URL }}
       - name: Install Python dependencies for build process.
-        run: venv/bin/pip install -U pip setuptools wheel cffi
+        run: venv/bin/pip install -U pip setuptools wheel build
       - name: Download libsodium source tree archive and extract it.
         run: |
           wget https://github.com/herumi/mcl/archive/refs/tags/v1.61.tar.gz
