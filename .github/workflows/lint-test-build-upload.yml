@@ -112,8 +112,8 @@ jobs:
           mv wheelhouse/mclbn*.whl mclbn-wheelhouse/
       - uses: actions/upload-artifact@v1
         with:
-          name: "rbcl-2.0.0-macOS-${{ matrix.PYTHON.VERSION }}"
-          path: rbcl-wheelhouse/
+          name: "mclbn-0.2.0-macOS-${{ matrix.PYTHON.VERSION }}"
+          path: mclbn-wheelhouse/
   macos-arm:
     runs-on: macOS-11
     strategy:
@@ -156,12 +156,12 @@ jobs:
         env:
           PYTHON_VERSION: ${{ matrix.PYTHON.ABI_VERSION }}
       - name: Test wheel installation.
-        run: venv/bin/pip install -f wheelhouse --no-index rbcl
+        run: venv/bin/pip install -f wheelhouse --no-index mclbn256
       - name: Lint and test module (and compiled libsodium shared library file).
         run: |
-          venv/bin/pip install -U pip pylint coverage nose
-          venv/bin/python -m pylint rbcl # Check against linting rules.
-          venv/bin/python rbcl/rbcl.py -v # Run doctests.
+          # venv/bin/pip install -U pip pylint coverage nose
+          # venv/bin/python -m pylint rbcl # Check against linting rules.
+          # venv/bin/python rbcl/rbcl.py -v # Run doctests.
           #venv/bin/python -m nose --cover-erase # Test using nose.  # RbCl 0.2.0 has succeeded before but but errored at end [due to nose in 3.10 bug](https://github.com/nose-devs/nose/issues/1099)
       - name: Upload wheel file.
         run: |
