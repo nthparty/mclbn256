@@ -7,7 +7,7 @@ jobs:
     container: quay.io/pypa/manylinux2014_x86_64
     strategy:
       matrix:
-        PYTHON: [cp38-cp38"]
+        PYTHON: ["cp38-cp38"]
         # PYTHON: ["cp37-cp37m", "cp38-cp38", "cp39-cp39"]
     name: "Python ${{ matrix.PYTHON }} for manylinux2014"
     steps:
@@ -119,6 +119,8 @@ jobs:
           cp mcl-*/lib/libmcl.dylib mclbn256/lib
 
           # Allow relative linking of libmcl.dylib dependency (also likely unused, but changing a link is easier than deleting one)
+          otool -L mclbn256/lib/libmcl.dylib  # dependency has only standard system dependencies
+          otool -L mclbn256/libmclbn256.dylib  # the BN254 build depends on lib/libmcl.so which may not be in any environment folder
           install_name_tool -change lib/libmcl.dylib @loader_path/lib/libmcl.dylib mclbn256/libmclbn256.dylib
 
           # Build
@@ -133,7 +135,8 @@ jobs:
           ls wheelhouse
           unzip -Zl wheelhouse/*.whl
           # ls -R wheelhouse
-          venv/bin/pip install -f wheelhouse --no-index mclbn256
+          venv/bin/pip install .
+          # venv/bin/pip install -f wheelhouse --no-index mclbn256
       - name: Lint and test module (and compiled libsodium shared library file).
         run: |
           venv/bin/python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"
@@ -192,6 +195,8 @@ jobs:
           cp mcl-*/lib/libmcl.dylib mclbn256/lib
 
           # Allow relative linking of libmcl.dylib dependency (also likely unused, but changing a link is easier than deleting one)
+          otool -L mclbn256/lib/libmcl.dylib  # dependency has only standard system dependencies
+          otool -L mclbn256/libmclbn256.dylib  # the BN254 build depends on lib/libmcl.so which may not be in any environment folder
           install_name_tool -change lib/libmcl.dylib @loader_path/lib/libmcl.dylib mclbn256/libmclbn256.dylib
 
           # Build
