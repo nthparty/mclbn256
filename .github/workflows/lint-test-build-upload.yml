@@ -7,7 +7,8 @@ jobs:
     container: quay.io/pypa/manylinux2014_x86_64
     strategy:
       matrix:
-        PYTHON: ["cp37-cp37m", "cp38-cp38", "cp39-cp39"]
+        PYTHON: [cp38-cp38"]
+        # PYTHON: ["cp37-cp37m", "cp38-cp38", "cp39-cp39"]
     name: "Python ${{ matrix.PYTHON }} for manylinux2014"
     steps:
       - uses: actions/checkout@v2
@@ -24,16 +25,25 @@ jobs:
           tar -xvzf *.tar.gz
       - name: Build wheel file.
         run: |
-          cd mcl-*
+          # Compile platform-dependent binaries
+          cd mcl*
           make
           ls lib
           cd ..
 
+          # Remove prebuilt binaries
           rm mclbn256/libmclbn256.*
           rm mclbn256/lib/libmcl.*
+
+          # Copy binaries into Python module
           cp mcl-*/lib/libmclbn256.so mclbn256
           cp mcl-*/lib/libmcl.so mclbn256/lib
-          .venv/bin/python -m build
+
+          # Allow relative linking of libmcl.so dependency (also likely unused, but changing a link is easier than deleting one)
+          install_name_tool -change lib/libmcl.so @loader_path/lib/libmcl.so mclbn256/libmclbn256.so
+
+          # Build
+          venv/bin/python -m build
 
           # mkdir tmpwheelhouse
           # mv dist/mclbn*.whl tmpwheelhouse
@@ -41,10 +51,14 @@ jobs:
           mkdir wheelhouse
           mv dist/mclbn*.whl wheelhouse
       - name: Test wheel installation.
-        run: .venv/bin/pip install -f wheelhouse --no-index mclbn256
+        run: |
+          ls wheelhouse
+          unzip wheelhouse/*.whl
+          ls -R wheelhouse
+          .venv/bin/pip install -f wheelhouse --no-index mclbn256
       - name: Lint and test module (and compiled libsodium shared library file).
         run: |
-          # .venv/bin/python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"
+          .venv/bin/python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"
           #.venv/bin/pip install -U pylint coverage coveralls nose
           #.venv/bin/python -m pylint rbcl # Check against linting rules.
           #.venv/bin/python rbcl/rbcl.py -v # Run doctests.
@@ -58,7 +72,7 @@ jobs:
            mv wheelhouse/mclbn*.whl mclbn-wheelhouse/
       - uses: actions/upload-artifact@v1
         with:
-          name: "mclbn256-0.2.1-manylinux1-${{ matrix.PYTHON }}"
+          name: "mclbn256-0.3.3-manylinux1-${{ matrix.PYTHON }}"
           path: mclbn-wheelhouse/
   macos:
     runs-on: macOS-latest
@@ -88,15 +102,24 @@ jobs:
           tar -xvzf *.tar.gz
       - name: Build wheel file.
         run: |
+          # Compile platform-dependent binaries
           cd mcl*
           make
           ls lib
           cd ..
 
+          # Remove prebuilt binaries
           rm mclbn256/libmclbn256.*
           rm mclbn256/lib/libmcl.*
+
+          # Copy binaries into Python module
           cp mcl-*/lib/libmclbn256.dylib mclbn256
           cp mcl-*/lib/libmcl.dylib mclbn256/lib
+
+          # Allow relative linking of libmcl.dylib dependency (also likely unused, but changing a link is easier than deleting one)
+          install_name_tool -change lib/libmcl.dylib @loader_path/lib/libmcl.dylib mclbn256/libmclbn256.dylib
+
+          # Build
           venv/bin/python -m build
 
           mkdir wheelhouse
@@ -108,10 +131,10 @@ jobs:
           ls wheelhouse
           unzip wheelhouse/*.whl
           ls -R wheelhouse
-          #venv/bin/pip install -f wheelhouse --no-index mclbn256
+          venv/bin/pip install -f wheelhouse --no-index mclbn256
       - name: Lint and test module (and compiled libsodium shared library file).
         run: |
-          # venv/bin/python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"
+          venv/bin/python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"
           # venv/bin/pip install -U pip pylint coverage nose
           # venv/bin/python -m pylint rbcl # Check against linting rules.
           # venv/bin/python rbcl/rbcl.py -v # Run doctests.
@@ -122,7 +145,7 @@ jobs:
           mv wheelhouse/mclbn*.whl mclbn-wheelhouse/
       - uses: actions/upload-artifact@v1
         with:
-          name: "mclbn-0.2.1-macOS-${{ matrix.PYTHON.VERSION }}"
+          name: "mclbn-0.3.3-macOS-${{ matrix.PYTHON.VERSION }}"
           path: mclbn-wheelhouse/
   macos-arm:
     runs-on: macOS-11
@@ -152,15 +175,24 @@ jobs:
           tar -xvzf *.tar.gz
       - name: Build wheel file.
         run: |
+          # Compile platform-dependent binaries
           cd mcl*
           make
           ls lib
           cd ..
 
+          # Remove prebuilt binaries
           rm mclbn256/libmclbn256.*
           rm mclbn256/lib/libmcl.*
+
+          # Copy binaries into Python module
           cp mcl-*/lib/libmclbn256.dylib mclbn256
           cp mcl-*/lib/libmcl.dylib mclbn256/lib
+
+          # Allow relative linking of libmcl.dylib dependency (also likely unused, but changing a link is easier than deleting one)
+          install_name_tool -change lib/libmcl.dylib @loader_path/lib/libmcl.dylib mclbn256/libmclbn256.dylib
+
+          # Build
           venv/bin/python -m build
 
           mkdir wheelhouse
@@ -168,10 +200,14 @@ jobs:
         env:
           PYTHON_VERSION: ${{ matrix.PYTHON.ABI_VERSION }}
       - name: Test wheel installation.
-        run: venv/bin/pip install -f wheelhouse --no-index mclbn256
+        run: |
+          ls wheelhouse
+          unzip wheelhouse/*.whl
+          ls -R wheelhouse
+          venv/bin/pip install -f wheelhouse --no-index mclbn256
       - name: Lint and test module (and compiled libsodium shared library file).
         run: |
-          # venv/bin/python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"
+          venv/bin/python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"
           # venv/bin/pip install -U pip pylint coverage nose
           # venv/bin/python -m pylint rbcl # Check against linting rules.
           # venv/bin/python rbcl/rbcl.py -v # Run doctests.
@@ -182,7 +218,7 @@ jobs:
           mv wheelhouse/mclbn*.whl mclbn-wheelhouse/
       - uses: actions/upload-artifact@v1
         with:
-          name: "mclbn-0.2.1-macOS-arm-${{ matrix.PYTHON.VERSION }}"
+          name: "mclbn-0.3.3-macOS-arm-${{ matrix.PYTHON.VERSION }}"
           path: mclbn-wheelhouse/
 
 
