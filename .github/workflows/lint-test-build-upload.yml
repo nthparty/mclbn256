@@ -1,4 +1,6 @@
 name: lint-test-build-upload
+on:
+  push
 true: push
 jobs: 
   linux: 
