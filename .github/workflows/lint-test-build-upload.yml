@@ -50,20 +50,20 @@ jobs:
           patchelf --print-needed mclbn256/libmclbn256.so  # the BN254 build depends on lib/libmcl.so which may not be in any environment folder
 
           echo "patching..."
-          patchelf --replace-needed lib/libmcl.so $ORIGIN/lib/libmcl.so mclbn256/libmclbn256.so
+          patchelf --replace-needed lib/libmcl.so \$ORIGIN/lib/libmcl.so mclbn256/libmclbn256.so
 
           echo "Files linked to from libmclbn256.so"
           patchelf --print-needed mclbn256/libmclbn256.so  # the lib/libmcl.so dependency should be relative now
 
           echo "patching..."
-          patchelf --replace-needed libmcl.so $ORIGIN/lib/libmcl.so mclbn256/libmclbn256.so
+          patchelf --replace-needed libmcl.so \$ORIGIN/lib/libmcl.so mclbn256/libmclbn256.so
 
           echo "Files linked to from libmclbn256.so"
           patchelf --print-needed mclbn256/libmclbn256.so  # the lib/libmcl.so dependency should be relative now
 
           echo "adding dependency...";#echo "patching..."
-          patchelf --add-needed $ORIGIN/lib/libmcl.so mclbn256/libmclbn256.so
-          # patchelf --add-needed $ORIGIN/libmcl.so mclbn256/libmclbn256.so
+          patchelf --add-needed \$ORIGIN/lib/libmcl.so mclbn256/libmclbn256.so
+          # patchelf --add-needed \$ORIGIN/libmcl.so mclbn256/libmclbn256.so
 
           echo "Files linked to from libmclbn256.so"
           patchelf --print-needed mclbn256/libmclbn256.so  # the lib/libmcl.so dependency should be relative now
