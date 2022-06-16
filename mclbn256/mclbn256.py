@@ -335,7 +335,7 @@ class lib:
 #
 def __init_lib():
     global lib
-    lib = load_library("lib/libmcl")
+    # _ = load_library("lib/libmcl")
     lib = load_library("libmclbn256")
     if lib.mclBn_init(mclBn_CurveFp254BNb, MCLBN_COMPILED_TIME_VAR): print("Failed to load MCl's BN254 binary.")
 __init_lib()
@@ -361,10 +361,16 @@ class Fr(Structure):
             self.setRnd()
 
     def __str__(self):
-        return self.tostr().decode()
+        return self.tostr(10).decode()
+
+    def __int__(self):
+        return int.from_bytes(self.tostr(32), 'little')
+        #  -or-  return int.from_bytes(self.serialize(), 'little')
 
     def setInt(self, d):
-        lib.mclBnFr_setInt(self.d, d)
+        self.fromstr(int.to_bytes(d, 32, 'little'), 32)
+        #lib.mclBnFr_setInt(self.d, d)
+
     def setRnd(self):
         lib.mclBnFr_setByCSPRNG(self.d)
 
@@ -417,11 +423,20 @@ class Fr(Structure):
     def deserialize(cls, s, length=None):
         return Fr()._deserialize(s, length)
 
-    def isZero(self):
+    def is_zero(self):
         return bool(lib.mclBnFr_isZero(self.d))
 
-    def isOne(self):
+    def is_one(self):
         return bool(lib.mclBnFr_isOne(self.d))
+
+    def is_odd(self):
+        return bool(lib.mclBnFr_isOdd(self.d))
+
+    def is_valid(self):
+        return bool(lib.mclBnFr_isValid(self.d))
+
+    def is_negative(self):
+        return bool(lib.mclBnFr_isNegative(self.d))
 
     def __neg__(self):
         ret = Fr()
@@ -433,35 +448,63 @@ class Fr(Structure):
         lib.mclBnFr_inv(ret.d, self.d)
         return ret
 
-    def __add__(self, rhs):
-        assert(type(rhs) is Fr)
+    def __add__(self, other):
+        assert(type(other) is Fr)
         ret = Fr()
-        lib.mclBnFr_add(ret.d, self.d, rhs.d)
+        lib.mclBnFr_add(ret.d, self.d, other.d)
         return ret
 
-    def __sub__(self, rhs):
-        assert(type(rhs) is Fr)
+    def __sub__(self, other):
+        assert(type(other) is Fr)
         ret = Fr()
-        lib.mclBnFr_sub(ret.d, self.d, rhs.d)
+        lib.mclBnFr_sub(ret.d, self.d, other.d)
         return ret
 
-    def __mul__(self, rhs):
-        assert(type(rhs) is Fr)
+    def __mul__(self, other):
+        assert(type(other) is Fr)
         ret = Fr()
-        lib.mclBnFr_mul(ret.d, self.d, rhs.d)
+        lib.mclBnFr_mul(ret.d, self.d, other.d)
         return ret
 
-    def __div__(self, rhs):
-        assert(type(rhs) is Fr)
+    def __pow__(self, other):
+        #assert(type(other) is Fr)
+        r = 0x2523648240000001ba344d8000000007ff9f800000000010a10000000000000d
+        return Fr(int(self).__pow__(int(other), r))
+        #return Fr(pow(int(self), int(other), r))
+
+    # def __mod__(self, other):
+    #     assert(type(other) is Fr)
+    #     return self - ((self//other) * other)
+
+    def __mod__(self, other):
+        #assert(type(other) is Fr)
+        return Fr(int(self).__mod__(int(other)))
+
+    def __truediv__(self, other):
+        assert(type(other) is Fr)
         ret = Fr()
-        lib.mclBnFr_div(ret.d, self.d, rhs.d)
+        lib.mclBnFr_div(ret.d, self.d, other.d)
         return ret
 
-    def __eq__(self, rhs):
-        return bool(lib.mclBnFr_isEqual(self.d, rhs.d))
+    def __floordiv__(self, other):
+        assert(type(other) is Fr)
+        return Fr(int(self).__floordiv__(int(other)))
 
-    def __ne__(self, rhs):
-        return not bool(lib.mclBnFr_isEqual(self.d, rhs.d))
+    def sqr(self):
+        ret = Fr()
+        lib.mclBnFr_sqr(ret.d, self.d)
+        return ret
+
+    def sqrt(self):
+        ret = Fr()
+        lib.mclBnFr_squareRoot(ret.d, self.d)
+        return ret
+
+    def __eq__(self, other):
+        return bool(lib.mclBnFr_isEqual(self.d, other.d))
+
+    def __ne__(self, other):
+        return not bool(lib.mclBnFr_isEqual(self.d, other.d))
 
 class Fp6Array(Structure):  # 4 * 6 * 70 unsigned longs = 13440 bytes per precomputed and memoized point in G2
     _fields_ = [("d", mclBnFp_bytes * 6 * precomputedQcoeffSize)]
