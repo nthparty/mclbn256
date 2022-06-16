@@ -204,7 +204,7 @@ jobs:
            mv wheelhouse/mclbn*.whl mclbn-wheelhouse/
       - uses: actions/upload-artifact@v1
         with:
-          name: "mclbn256-0.3.3-manylinux1-${{ matrix.PYTHON }}"
+          name: "mclbn256-0.3.3-linux1-${{ matrix.PYTHON }}"
           path: mclbn-wheelhouse/
   macos-10:
     runs-on: macOS-10.15
