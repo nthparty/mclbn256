@@ -185,7 +185,7 @@ jobs:
           - VERSION: '3.9'
             ABI_VERSION: '3.6'
             DOWNLOAD_URL: 'https://www.python.org/ftp/python/3.9.12/python-3.9.12-macos11.pkg'
-            BIN_PATH: '/Library/Frameworks/Python.framework/Versions/3.8/bin/python3'
+            BIN_PATH: '/Library/Frameworks/Python.framework/Versions/3.9/bin/python3'
     name: "Python ${{ matrix.PYTHON.VERSION }} for ABI ${{ matrix.PYTHON.ABI_VERSION }} on macOS"
     steps:
       - uses: actions/checkout@v2
