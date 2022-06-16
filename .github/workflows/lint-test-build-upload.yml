@@ -45,7 +45,7 @@ jobs:
           patchelf --replace-needed lib/libmcl.so $ORIGIN/lib/libmcl.so mclbn256/libmclbn256.so
 
           # Build
-          venv/bin/python -m build
+          .venv/bin/python -m build
 
           # mkdir tmpwheelhouse
           # mv dist/mclbn*.whl tmpwheelhouse
