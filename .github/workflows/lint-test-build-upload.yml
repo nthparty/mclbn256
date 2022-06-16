@@ -39,10 +39,28 @@ jobs:
           cp mcl-*/lib/libmclbn256.so mclbn256
           cp mcl-*/lib/libmcl.so mclbn256/lib
 
+
+          #
           # Allow relative linking of libmcl.so dependency (also likely unused, but changing a link is easier than deleting one)
-          patchelf --print-needed mclbn256/lib/libmcl.so  # dependency has only standard system dependencies
+          #
+          echo "Files linked to from lib/libmcl.so"
+          patchelf --print-needed mclbn256/lib/libmcl.so  # dependency has only standard system dependenciesendency (also likely unused, but changing a link is easier than deleting one)
+          
+          echo "Files linked to from libmclbn256.so"
           patchelf --print-needed mclbn256/libmclbn256.so  # the BN254 build depends on lib/libmcl.so which may not be in any environment folder
+
+          echo "patching..."
           patchelf --replace-needed lib/libmcl.so $ORIGIN/lib/libmcl.so mclbn256/libmclbn256.so
+
+          echo "Files linked to from libmclbn256.so"
+          patchelf --print-needed mclbn256/libmclbn256.so  # the lib/libmcl.so dependency should be relative now
+
+          echo "patching..."
+          patchelf --replace-needed libmcl.so $ORIGIN/lib/libmcl.so mclbn256/libmclbn256.so
+
+          echo "Files linked to from libmclbn256.so"
+          patchelf --print-needed mclbn256/libmclbn256.so  # the lib/libmcl.so dependency should be relative now
+
 
           # Build
           .venv/bin/python -m build
