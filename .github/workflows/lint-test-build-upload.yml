@@ -7,8 +7,105 @@ jobs:
     container: quay.io/pypa/manylinux2014_x86_64
     strategy:
       matrix:
-        PYTHON: ["cp38-cp38"]
-        # PYTHON: ["cp37-cp37m", "cp38-cp38", "cp39-cp39"]
+        PYTHON: ["cp37-cp37m", "cp38-cp38", "cp39-cp39", "cp310-cp310"]
+    name: "Python ${{ matrix.PYTHON }} for manylinux2014"
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Python.
+        run: |
+          yum -y install wget libffi-devel patchelf
+          /opt/python/${{ matrix.PYTHON }}/bin/python -m pip install virtualenv
+          /opt/python/${{ matrix.PYTHON }}/bin/python -m virtualenv .venv
+      - name: Install Python dependencies for build process.
+        run: .venv/bin/pip install -U pip setuptools wheel build
+      - name: Download mcl source tree archive and extract it.
+        run: |
+          wget https://github.com/herumi/mcl/archive/refs/tags/v1.61.tar.gz
+          tar -xvzf *.tar.gz
+      - name: Build wheel file.
+        run: |
+          # Compile platform-dependent binaries
+          cd mcl*
+          make
+          ls lib
+          cd ..
+
+          # Remove prebuilt binaries
+          rm mclbn256/libmclbn256.*
+          rm mclbn256/lib/libmcl.*
+
+          # Copy binaries into Python module
+          cp mcl-*/lib/libmclbn256.so mclbn256
+          cp mcl-*/lib/libmcl.so mclbn256/lib
+
+
+          #
+          # Allow relative linking of libmcl.so dependency (also likely unused, but changing a link is easier than deleting one)
+          #
+          echo "Files linked to from lib/libmcl.so"
+          patchelf --print-needed mclbn256/lib/libmcl.so  # dependency has only standard system dependenciesendency (also likely unused, but changing a link is easier than deleting one)
+          
+          echo "Files linked to from libmclbn256.so"
+          patchelf --print-needed mclbn256/libmclbn256.so  # the BN254 build depends on lib/libmcl.so which may not be in any environment folder
+
+          echo "patching..."
+          patchelf --replace-needed lib/libmcl.so \$ORIGIN/lib/libmcl.so mclbn256/libmclbn256.so
+
+          echo "Files linked to from libmclbn256.so"
+          patchelf --print-needed mclbn256/libmclbn256.so  # the lib/libmcl.so dependency should be relative now
+
+          echo "patching..."
+          patchelf --replace-needed libmcl.so \$ORIGIN/lib/libmcl.so mclbn256/libmclbn256.so
+
+          echo "Files linked to from libmclbn256.so"
+          patchelf --print-needed mclbn256/libmclbn256.so  # the lib/libmcl.so dependency should be relative now
+
+          echo "adding dependency...";#echo "patching..."
+          patchelf --add-needed \$ORIGIN/lib/libmcl.so mclbn256/libmclbn256.so
+          # patchelf --add-needed \$ORIGIN/libmcl.so mclbn256/libmclbn256.so
+
+          echo "Files linked to from libmclbn256.so"
+          patchelf --print-needed mclbn256/libmclbn256.so  # the lib/libmcl.so dependency should be relative now
+
+
+          # Build
+          .venv/bin/python -m build
+
+          mkdir tmpwheelhouse
+          mv dist/mclbn*.whl tmpwheelhouse
+          auditwheel repair tmpwheelhouse/mclbn*.whl -w wheelhouse/
+          # mkdir wheelhouse
+          # mv dist/mclbn*.whl wheelhouse
+      - name: Test wheel installation.
+        run: |
+          ls wheelhouse
+          unzip -Zl wheelhouse/*.whl
+          # ls -R wheelhouse
+          .venv/bin/pip install -f wheelhouse --no-index mclbn256
+      - name: Lint and test module (and compiled libsodium shared library file).
+        run: |
+          .venv/bin/python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"
+          #.venv/bin/pip install -U pylint coverage coveralls nose
+          #.venv/bin/python -m pylint rbcl # Check against linting rules.
+          #.venv/bin/python rbcl/rbcl.py -v # Run doctests.
+          #.venv/bin/python -m nose --cover-erase # Test using nose.
+          #.venv/bin/python -m coveralls --service=github # Submit to coveralls.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload wheel file.
+        run: |
+           mkdir mclbn-wheelhouse
+           mv wheelhouse/mclbn*.whl mclbn-wheelhouse/
+      - uses: actions/upload-artifact@v1
+        with:
+          name: "mclbn256-0.3.3-manylinux1-${{ matrix.PYTHON }}"
+          path: mclbn-wheelhouse/
+  linux:
+    runs-on: ubuntu-latest
+    container: quay.io/pypa/manylinux2014_x86_64
+    strategy:
+      matrix:
+        PYTHON: ["cp37-cp37m", "cp38-cp38", "cp39-cp39", "cp310-cp310"]
     name: "Python ${{ matrix.PYTHON }} for manylinux2014"
     steps:
       - uses: actions/checkout@v2
