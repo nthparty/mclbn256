@@ -364,12 +364,27 @@ class Fr(Structure):
         return self.tostr(10).decode()
 
     def __int__(self):
-        return int.from_bytes(self.tostr(32), 'little')
-        #  -or-  return int.from_bytes(self.serialize(), 'little')
+        id = lambda s : s
+        sign, unsign = (int.__neg__, Fr.__neg__) if self.is_negative() else (id, id)
 
-    def setInt(self, d):
-        self.fromstr(int.to_bytes(d, 32, 'little'), 32)
-        #lib.mclBnFr_setInt(self.d, d)
+        return sign(int.from_bytes(unsign(self).tostr(32), 'little'))
+        #  -or-  return sign(int.from_bytes(unsign(self).serialize(), 'little'))
+
+    def setInt(self, value):
+        # r = 0x2523648240000001ba344d8000000007ff9f800000000010a10000000000000d
+        # self.fromstr(int.to_bytes(value if value>=0 else r-value, 32, 'little'), 32)
+
+        # self.fromstr(int.to_bytes(abs(value), 32, 'little'), 32)
+        # if value < 0: lib.mclBnFr_neg(self.d, self.d)
+
+        self.fromstr(int.to_bytes(abs(value), 32, 'little'), 32)
+        if value < 0: self = -self
+
+        # self.fromstr(int.to_bytes(value, 32, 'little', signevalue=True), 32)
+
+        # self.fromstr(int.to_bytes(value, 32, 'little'), 32)
+        
+        # lib.mclBnFr_setInt(self.value, value)
 
     def setRnd(self):
         lib.mclBnFr_setByCSPRNG(self.d)
