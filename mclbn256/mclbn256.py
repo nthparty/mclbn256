@@ -378,7 +378,7 @@ class Fr(Structure):
         # if value < 0: lib.mclBnFr_neg(self.d, self.d)
 
         self.fromstr(int.to_bytes(abs(value), 32, 'little'), 32)
-        if value < 0: self = -self
+        if value < 0: self.negate()
 
         # self.fromstr(int.to_bytes(value, 32, 'little', signevalue=True), 32)
 
@@ -457,6 +457,13 @@ class Fr(Structure):
         ret = Fr()
         lib.mclBnFr_neg(ret.d, self.d)
         return ret
+
+    # def __neg__in_place(self):
+    #     lib.mclBnFr_neg(self.d, self.d)
+    #     return self
+
+    def negate(self):
+        lib.mclBnFr_neg(self.d, self.d)
 
     def __invert__(self):
         ret = Fr()
