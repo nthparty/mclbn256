@@ -559,4 +559,4 @@ jobs:
       - uses: actions/upload-artifact@v1
         with:
           name: "mclbn256-2.0.0-win-${{ matrix.WINDOWS.ARCH }}-${{ matrix.PYTHON.VERSION }}"
-          path: mclbn256-wheelhouse\
+          path: d:\a\mclbn256\mclbn256\
