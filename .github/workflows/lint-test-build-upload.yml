@@ -536,14 +536,14 @@ jobs:
           cp mcl-*/lib/mclbn256.dll mclbn256/libmclbn256.dll
 
 
-           mkdir wheelhouse
+          mkdir wheelhouse
           # call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat" -no_logo -arch=${{ matrix.WINDOWS.VS_ARCH }}
-           python setup.py bdist_wheel --py-limited-api=${{ matrix.PYTHON.ABI_VERSION }}
+          python setup.py bdist_wheel --py-limited-api=${{ matrix.PYTHON.ABI_VERSION }}
           # cp build/lib*/mclbn256/_sodium.pyd mclbn256
-          # mv dist/mclbn256*.whl wheelhouse
+          mv dist/mclbn256*.whl wheelhouse
         shell: cmd
-#      - name: Test wheel installation.
-#        run: pip install -f wheelhouse mclbn256 --no-index
+      - name: Test wheel installation.
+        run: pip install -f wheelhouse mclbn256 --no-index
       - name: Lint and test module (and compiled libsodium shared library file).
         run: |
           # python -m pip install -U pip pylint coverage nose
@@ -553,7 +553,7 @@ jobs:
       - name: Upload wheel file.
         run: |
           mkdir mclbn256-wheelhouse
-          # move wheelhouse\mclbn256*.whl mclbn256-wheelhouse\
+          move wheelhouse\mclbn256*.whl mclbn256-wheelhouse\
           # move mcl-*\* mclbn256-wheelhouse\
           move mcl-*\lib\mclbn256.dll mclbn256-wheelhouse\
       - uses: actions/upload-artifact@v1
