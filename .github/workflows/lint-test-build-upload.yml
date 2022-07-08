@@ -523,7 +523,7 @@ jobs:
           echo "INCLUDE=C:/libsodium/include;$INCLUDE" >> $GITHUB_ENV
           echo "LIB=C:/libsodium/${{ matrix.WINDOWS.SODIUM_ARCH }}/release/${{ matrix.PYTHON.SODIUM_MSVC_VERSION }}/static;$LIB" >> $GITHUB_ENV
         shell: bash
-      - name: Build wheel file.
+      - name: Build DLL.
         run: |
           ls
           cd mcl-*
@@ -531,6 +531,9 @@ jobs:
           mklib dll
           mk -d test\bls12_test.cpp && bin\bls12_test.exe
           cd ..
+        shell: cmd
+      - name: Build wheel file.
+        run: |
           cp mcl-*/lib/mclbn256.dll mclbn256/libmclbn256.dll
           mkdir wheelhouse
           # call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat" -no_logo -arch=${{ matrix.WINDOWS.VS_ARCH }}
