@@ -544,8 +544,8 @@ jobs:
           # cp build/lib*/mclbn256/_sodium.pyd mclbn256
           # mv dist/mclbn256*.whl wheelhouse
         shell: cmd
-      - name: Test wheel installation.
-        run: pip install -f wheelhouse mclbn256 --no-index
+#      - name: Test wheel installation.
+#        run: pip install -f wheelhouse mclbn256 --no-index
       - name: Lint and test module (and compiled libsodium shared library file).
         run: |
           # python -m pip install -U pip pylint coverage nose
