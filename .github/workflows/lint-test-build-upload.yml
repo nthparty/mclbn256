@@ -551,7 +551,7 @@ jobs:
           ls wheelhouse
         shell: cmd
       - name: Test wheel installation.
-        run: echo #pip install -f wheelhouse mclbn256 --no-index  # Commented out so Win32 doesn't complain about its wheel.
+        run: pip list #pip install -f wheelhouse mclbn256 --no-index  # Commented out so Win32 doesn't complain about its wheel.
       - name: Lint and test module (and compiled libsodium shared library file).
         run: |
           python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"
