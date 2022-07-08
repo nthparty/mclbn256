@@ -537,8 +537,11 @@ jobs:
           ls mcl-*/lib/
           echo
           echo
+          ls mcl-*/bin/
+          echo
+          echo
           ls mclbn256/
-          cp mcl-*/lib/mclbn256.dll mclbn256/libmclbn256.dll
+          cp mcl-*/bin/mclbn256.dll mclbn256/libmclbn256.dll
           mkdir wheelhouse
           # call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat" -no_logo -arch=${{ matrix.WINDOWS.VS_ARCH }}
           python setup.py bdist_wheel --py-limited-api=${{ matrix.PYTHON.ABI_VERSION }}
@@ -565,4 +568,4 @@ jobs:
       - uses: actions/upload-artifact@v1
         with:
           name: "mclbn256-2.0.0-win-${{ matrix.WINDOWS.ARCH }}-${{ matrix.PYTHON.VERSION }}"
-          path: d:\a\mclbn256\mclbn256\mcl-*\lib\
+          path: mclbn256-wheelhouse
