@@ -512,7 +512,7 @@ jobs:
       - name: Download and extract mcl dynamic library file.
         run: |
           wget -O c:\msvc-mcl-v1.61.zip https://github.com/herumi/mcl/archive/refs/tags/v1.61.zip
-          Expand-Archive c:\msvc-mcl-v1.61.zip -DestinationPath c:\
+          Expand-Archive c:\msvc-mcl-v1.61.zip -DestinationPath d:\a\mclbn256\mclbn256
           dir .
           dir c:\
         shell: powershell
@@ -523,7 +523,6 @@ jobs:
         shell: bash
       - name: Build wheel file.
         run: |
-          cd c:\
           ls
           cd mcl-*
           ls
