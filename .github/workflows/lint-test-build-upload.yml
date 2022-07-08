@@ -521,7 +521,10 @@ jobs:
         shell: bash
       - name: Build wheel file.
         run: |
+          cd c:\
+          ls
           cd mcl-*
+          ls
           mklib dll
           mk -d test\bls12_test.cpp && bin\bls12_test.exe
 
