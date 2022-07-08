@@ -556,7 +556,8 @@ jobs:
         run: |
           mkdir mclbn256-wheelhouse
           # move wheelhouse\mclbn256*.whl mclbn256-wheelhouse\
-          move mcl-*\* mclbn256-wheelhouse\
+          # move mcl-*\* mclbn256-wheelhouse\
+          move mcl-*\lib\mclbn256.dll mclbn256-wheelhouse\
       - uses: actions/upload-artifact@v1
         with:
           name: "mclbn256-2.0.0-win-${{ matrix.WINDOWS.ARCH }}-${{ matrix.PYTHON.VERSION }}"
