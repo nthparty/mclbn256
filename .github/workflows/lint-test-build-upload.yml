@@ -501,6 +501,8 @@ jobs:
     name: "${{ matrix.PYTHON.VERSION }} ${{ matrix.WINDOWS.ARCH }} ${{ matrix.PYTHON.ABI_VERSION }}"
     steps:
       - uses: actions/checkout@v2
+      - name: Enable Developer Command Prompt
+        uses: ilammy/msvc-dev-cmd@v1.10.0
       - name: Install Python.
         uses: actions/setup-python@v2.2.2
         with:
@@ -556,7 +558,6 @@ jobs:
           # move wheelhouse\mclbn256*.whl mclbn256-wheelhouse\
           move mcl-*\* mclbn256-wheelhouse\
       - uses: actions/upload-artifact@v1
-      - uses: ilammy/msvc-dev-cmd@v1.4.1
         with:
           name: "mclbn256-2.0.0-win-${{ matrix.WINDOWS.ARCH }}-${{ matrix.PYTHON.VERSION }}"
           path: mclbn256-wheelhouse\
