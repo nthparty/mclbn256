@@ -531,11 +531,7 @@ jobs:
           mklib dll
           mk -d test\bls12_test.cpp && bin\bls12_test.exe
           cd ..
-
-
           cp mcl-*/lib/mclbn256.dll mclbn256/libmclbn256.dll
-
-
           mkdir wheelhouse
           # call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat" -no_logo -arch=${{ matrix.WINDOWS.VS_ARCH }}
           python setup.py bdist_wheel --py-limited-api=${{ matrix.PYTHON.ABI_VERSION }}
