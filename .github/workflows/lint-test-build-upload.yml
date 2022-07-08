@@ -529,11 +529,15 @@ jobs:
           cd mcl-*
           ls
           mklib dll
-          mk -d test\bls12_test.cpp && bin\bls12_test.exe
+          # mk -d test\bls12_test.cpp && bin\bls12_test.exe
           cd ..
         shell: cmd
       - name: Build wheel file.
         run: |
+          ls mcl-*/lib/
+          echo
+          echo
+          ls mclbn256/
           cp mcl-*/lib/mclbn256.dll mclbn256/libmclbn256.dll
           mkdir wheelhouse
           # call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat" -no_logo -arch=${{ matrix.WINDOWS.VS_ARCH }}
