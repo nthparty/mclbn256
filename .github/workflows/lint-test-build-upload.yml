@@ -513,6 +513,8 @@ jobs:
         run: |
           wget -O c:\msvc-mcl-v1.61.zip https://github.com/herumi/mcl/archive/refs/tags/v1.61.zip
           Expand-Archive c:\msvc-mcl-v1.61.zip -DestinationPath c:\
+          dir .
+          dir c:\
         shell: powershell
       - name: Add environment variables for libsodium.
         run: |
@@ -555,6 +557,7 @@ jobs:
           # move wheelhouse\mclbn256*.whl mclbn256-wheelhouse\
           move mcl-*\* mclbn256-wheelhouse\
       - uses: actions/upload-artifact@v1
+      - uses: ilammy/msvc-dev-cmd@v1.4.1
         with:
           name: "mclbn256-2.0.0-win-${{ matrix.WINDOWS.ARCH }}-${{ matrix.PYTHON.VERSION }}"
           path: mclbn256-wheelhouse\
