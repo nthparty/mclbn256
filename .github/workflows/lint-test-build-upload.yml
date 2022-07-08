@@ -553,4 +553,4 @@ jobs:
       - uses: actions/upload-artifact@v1
         with:
           name: "mclbn256-2.0.0-win-${{ matrix.WINDOWS.ARCH }}-${{ matrix.PYTHON.VERSION }}"
-          path: mcl-*/bin/
+          path: mcl-1.61/bin/mclbn256.dll
