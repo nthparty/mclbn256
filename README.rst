@@ -23,7 +23,7 @@ The library can be imported in the usual ways:
 
 ::
 
-   import mclbn256  # All required data structures
+   import mclbn256  # Abstracted 'dumb' API over the scalar and point groups
    from mclbn256 import mclbn256  # Extended attributes, internals, classes, test methods
 
 Examples
@@ -63,6 +63,8 @@ included as well:
    64
    >>> len((G1().randomize() @ G2().randomize()).serialize()) <= 384
    True
+   
+The representation of BN254 points and scalars in this library is compatible with the pure-Python `bn254 <https://pypi.org/project/bn254/>`__ implementation thanks to ``ECp_to_G1`` and the other similarly-named helpers.
 
 Please see the package
 `oblivious <https://pypi.org/project/oblivious/>`__ (which extends this
