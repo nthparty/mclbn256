@@ -1151,6 +1151,77 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
         return retval
 
 
+def G1_to_ECp(p):
+    import bn254
+    return (
+        lambda X : (lambda x : (x if x.setxy(*map(int, X.tostr(10).decode().split(' ')[-2:])) else None))(bn254.ECp())
+    )(p)
+
+
+def ECp_to_G1(p):
+    # import bn254
+    try:
+        return (
+            lambda x : G1().fromstr(str(x).replace(',', ' ').replace('(', '1 ').replace(')', '').encode())
+        )(p)
+    except ValueError:
+        return None
+
+
+def G2_to_ECp2(p):
+    import bn254
+    return (
+        lambda Y: (
+            lambda y: (
+                # y if y.setxy(*map(int, Y.tostr(10).decode().split(' ')[-4:])) else None
+                y if y.set(*(lambda u,v,t,w: (bn254.Fp2(bn254.Fp(u), bn254.Fp(v)), bn254.Fp2(bn254.Fp(t), bn254.Fp(w))) )(*map(int, Y.tostr(10).decode().split(' ')[-4:]))) else None
+            ))(bn254.ECp2())
+    )(p)
+
+
+def ECp2_to_G2(y):
+    # import bn254
+    try:
+        return G2().fromstr(
+            ('1 ' + ' '.join(map(str, (lambda y1, y2: list(y1.get()) + list(y2.get()))(*y.get())))).encode(), 10
+        )
+    except ValueError:
+        return None
+
+
+def assert_compatible():
+    for _ in range(128):
+        X = G1().randomize()
+        x = G1_to_ECp(X)
+
+        assert ECp_to_G1(x) + ECp_to_G1(x) == ECp_to_G1(x.add(x))
+        assert G1_to_ECp(X).add(G1_to_ECp(X)) == G1_to_ECp(X + X)
+        assert G1_to_ECp(ECp_to_G1(x)) == x
+        assert ECp_to_G1(G1_to_ECp(X)) == X
+        assert G1_to_ECp(ECp_to_G1(x) + ECp_to_G1(x)) == x.add(x)
+        assert G1_to_ECp(ECp_to_G1(x) + ECp_to_G1(x)) == x.dbl()
+        assert ECp_to_G1(G1_to_ECp(X).add(G1_to_ECp(X))) == X + X
+        assert ECp_to_G1(G1_to_ECp(X).add(G1_to_ECp(X))) == X.dbl()
+
+        # print(x)
+        # print(X)
+
+        Y = G2().randomize()
+        y = G2_to_ECp2(Y)
+
+        assert ECp2_to_G2(y) + ECp2_to_G2(y) == ECp2_to_G2(y.add(y))
+        assert G2_to_ECp2(Y).add(G2_to_ECp2(Y)) == G2_to_ECp2(Y + Y)
+        assert G2_to_ECp2(ECp2_to_G2(y)) == y
+        assert ECp2_to_G2(G2_to_ECp2(Y)) == Y
+        assert G2_to_ECp2(ECp2_to_G2(y) + ECp2_to_G2(y)) == y.add(y)
+        assert G2_to_ECp2(ECp2_to_G2(y) + ECp2_to_G2(y)) == y.dbl()
+        assert ECp2_to_G2(G2_to_ECp2(Y).add(G2_to_ECp2(Y))) == Y + Y
+        assert ECp2_to_G2(G2_to_ECp2(Y).add(G2_to_ECp2(Y))) == Y.dbl()
+
+        # print(y)
+        # print(Y)
+
+
 def assert_bilinearity():
     a = Fr()  # random by default
     b = Fr()
@@ -1227,3 +1298,5 @@ def assert_sane():
 # assert_bilinearity()
 # assert_serializable()
 assert_sane()
+# assert_compatible()
+
