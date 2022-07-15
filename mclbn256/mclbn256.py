@@ -698,6 +698,14 @@ class G1(Structure):  # mclBnG1 type in C
     def __str__(self):
         return self.tostr().decode()
 
+    def __hex__(self):
+        return self.serialize().hex()
+
+    @classmethod
+    def fromhex(cls, h: str):
+        return G1().deserialize(bytes.fromhex(h))
+        #return cls().deserialize(bytes.fromhex(h))
+
     def randomize(self):
         sr = Fr(); sr.setRnd()
         lib.mclBnG1_hashAndMapTo(self.d, sr.d, 32)
@@ -907,6 +915,14 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
 
     def __str__(self):
         return self.tostr().decode()
+
+    def __hex__(self):
+        return self.serialize().hex()
+
+    @classmethod
+    def fromhex(cls, h: str):
+        return G2().deserialize(bytes.fromhex(h))
+        #return cls().deserialize(bytes.fromhex(h))
 
     def randomize(self):
         sr = Fr(); sr.setRnd()
