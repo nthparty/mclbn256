@@ -703,6 +703,13 @@ class G1(Structure):  # mclBnG1 type in C
         lib.mclBnG1_hashAndMapTo(self.d, sr.d, 32)
         return self.mul(sr)
 
+    @classmethod
+    def random(cls):
+        self = G1()
+        sr = Fr(); sr.setRnd()
+        lib.mclBnG1_hashAndMapTo(self.d, sr.d, 32)
+        return self.mul(sr)
+
     # def hash(self, s):
     #     return lib.mclBnG1_hashAndMapTo(self.d, c_wchar_p(s), len(s))
     def hash(self, s):
@@ -902,6 +909,13 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
         return self.tostr().decode()
 
     def randomize(self):
+        sr = Fr(); sr.setRnd()
+        lib.mclBnG2_hashAndMapTo(self.d, sr.d, 32)
+        return self.mul(sr)
+
+    @classmethod
+    def random(cls):
+        self = G2()
         sr = Fr(); sr.setRnd()
         lib.mclBnG2_hashAndMapTo(self.d, sr.d, 32)
         return self.mul(sr)
