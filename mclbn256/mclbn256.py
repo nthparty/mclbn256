@@ -48,6 +48,9 @@ class lib:
     def mclBnG1_getStr(buf, maxBufSize, x, ioMode):
         """char *buf, mclSize maxBufSize, const mclBnG1 *x, int ioMode"""
         return int()#mclSize()
+    def mclBnG1_getBasePoint(x):
+        """mclBnG1 *x"""
+        return int()
     def mclBnG1_setStr(x, buf, bufSize, ioMode):
         """mclBnG1 *x, const char *buf, mclSize bufSize, int ioMode"""
         return int()
@@ -128,6 +131,9 @@ class lib:
         return int()#mclSize()
     def mclBnG2_getStr(buf, maxBufSize, x, ioMode):
         return int()#mclSize()
+    def mclBnG2_getBasePoint(x):
+        """mclBnG2 *x"""
+        return int()
     def mclBnG2_setStr(x, buf, bufSize, ioMode):
         return int()
     def mclBnG2_neg(y, x):
@@ -748,6 +754,16 @@ class G1(Structure):  # mclBnG1 type in C
             raise ValueError("MCl library call failed.")
         return retval
 
+    @classmethod
+    def base_point(cls):# -> int
+        # result = G1()
+        # x = result.d
+        # libretval = lib.mclBnG1_getBasePoint(x)
+        # if not libretval == 0:
+        #     raise ValueError("MCl library call failed.")
+        # return result
+        return G1.fromhex('12000000000000a7130000000000216108000000804d34ba01000040826423a5')
+
     def neg(self):# -> void
         result = G1()
         z = result.d
@@ -963,6 +979,14 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
         if retval:
             raise ValueError("MCl library call failed.")
         return retval
+
+    @classmethod
+    def base_point(cls):# -> int
+        # result = G2()
+        # x = result.d
+        # libretval = not lib.mclBnG2_getBasePoint
+        return G2.fromhex('2bfb03c82442ee910dbf9848bb8b64a4b6ed618c7e8c8deb2fb69e51bb101a06'
+                          'f34cd5e7c1348c0db78437ae6b744d1f5baa82598ca70a31337873baf9aa1605')
 
     def neg(self):# -> void
         result = G2()
