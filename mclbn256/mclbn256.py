@@ -411,6 +411,7 @@ class Fr(Structure):
 
     def tostr(self, io_mode=16, raw=True, length=1021):
         """
+        See https://github.com/herumi/mcl/blob/master/include/mcl/op.hpp#L30-L108 for details.
         # define MCLBN_IO_EC_AFFINE 0
         # define MCLBN_IO_BINARY 2
         # define MCLBN_IO_DECIMAL 10
@@ -640,6 +641,8 @@ class GT(Structure):  # mclBnGT type in C
 
     def tostr(self, io_mode=16, raw=True, length=1021):
         """
+        See https://github.com/herumi/mcl/blob/master/include/mcl/op.hpp#L30-L108 for details.
+        //github.com/herumi/mcl/blob/0489e76cfae425ab9d3ec93952e9ae928ef86017/include/mcl/op.hpp#L30
         # define MCLBN_IO_EC_AFFINE 0
         # define MCLBN_IO_BINARY 2
         # define MCLBN_IO_DECIMAL 10
@@ -845,6 +848,7 @@ class G1(Structure):  # mclBnG1 type in C
 
     def tostr(self, io_mode=16, raw=True, length=1021):
         """
+        See https://github.com/herumi/mcl/blob/master/include/mcl/op.hpp#L30-L108 for details.
         # define MCLBN_IO_EC_AFFINE 0
         # define MCLBN_IO_BINARY 2
         # define MCLBN_IO_DECIMAL 10
@@ -1069,6 +1073,7 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
 
     def tostr(self, io_mode=16, raw=True, length=1021):
         """
+        See https://github.com/herumi/mcl/blob/master/include/mcl/op.hpp#L30-L108 for details.
         # define MCLBN_IO_EC_AFFINE 0
         # define MCLBN_IO_BINARY 2
         # define MCLBN_IO_DECIMAL 10
