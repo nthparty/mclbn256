@@ -1198,6 +1198,20 @@ def ECp2_to_G2(y):
         return None
 
 
+def ECp_serialize(p):
+    # import bn254
+    if p.isinf():
+        return b"\x00"*32  # bytes([0]*32)
+    try:
+        return (
+                lambda p: bytes((lambda x, y: (lambda ps: (lambda ret,_: ret)(
+                    ps, ps.append(ps.pop() ^ ((y%2)<<7)))
+                                               )(list(x.to_bytes(32, 'little'))))(*p.get()))
+        )(p)
+    except ValueError:
+        return None
+
+
 def assert_compatible():
     for _ in range(128):
         X = G1().randomize()
@@ -1229,6 +1243,9 @@ def assert_compatible():
 
         # print(y)
         # print(Y)
+
+        x = G1_to_ECp(X)  # Note: Many `x._()` methods mutate `x`, such as `.add` and `.dbl` used above.
+        assert G1().deserialize(ECp_serialize(x)) == X and X.serialize() == ECp_serialize(x)
 
 
 def assert_bilinearity():
