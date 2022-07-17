@@ -1161,35 +1161,43 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
 
 
 def G1_to_ECp(p):
-    import bn254
+    from bn254 import ECp
+    if p.zero():
+        return ECp()  # Note: bn254.ECp().toBytes(1) == b'\x02' + b"\x00" * 32
     return (
-        lambda X : (lambda x : (x if x.setxy(*map(int, X.tostr(10).decode().split(' ')[-2:])) else None))(bn254.ECp())
+        lambda X : (lambda x : (x if x.setxy(*map(int, X.tostr(10).decode().split(' ')[-2:])) else None))(ECp())
     )(p)
 
 
-def ECp_to_G1(p):
+def ECp_to_G1(x):
     # import bn254
+    if x.isinf():
+        return G1()#.fromstr(b"\x00"*32, 32)  # Note: bn254.ECp().toBytes(1) == b'\x02' + b"\x00" * 32
     try:
         return (
-            lambda x : G1().fromstr(str(x).replace(',', ' ').replace('(', '1 ').replace(')', '').encode())
-        )(p)
+            lambda p : G1().fromstr(str(p).replace(',', ' ').replace('(', '1 ').replace(')', '').encode())
+        )(x)
     except ValueError:
         return None
 
 
-def G2_to_ECp2(p):
-    import bn254
+def G2_to_ECp2(q):
+    from bn254 import ECp2, Fp, Fp2
+    if q.zero():
+        return ECp2()  # Note: bn254.ECp2().toBytes(1) == b'\x02' + b"\x00" * 64
     return (
         lambda Y: (
             lambda y: (
                 # y if y.setxy(*map(int, Y.tostr(10).decode().split(' ')[-4:])) else None
-                y if y.set(*(lambda u,v,t,w: (bn254.Fp2(bn254.Fp(u), bn254.Fp(v)), bn254.Fp2(bn254.Fp(t), bn254.Fp(w))) )(*map(int, Y.tostr(10).decode().split(' ')[-4:]))) else None
-            ))(bn254.ECp2())
-    )(p)
+                y if y.set(*(lambda u,v,t,w: (Fp2(Fp(u), Fp(v)), Fp2(Fp(t), Fp(w))) )(*map(int, Y.tostr(10).decode().split(' ')[-4:]))) else None
+            ))(ECp2())
+    )(q)
 
 
 def ECp2_to_G2(y):
     # import bn254
+    if y.isinf():
+        return G2()#.fromstr(b"\x00"*64, 64)  # Note: bn254.ECp2().toBytes(1) == b'\x02' + b"\x00" * 64
     try:
         return G2().fromstr(
             ('1 ' + ' '.join(map(str, (lambda y1, y2: list(y1.get()) + list(y2.get()))(*y.get())))).encode(), 10
@@ -1246,6 +1254,14 @@ def assert_compatible():
 
         x = G1_to_ECp(X)  # Note: Many `x._()` methods mutate `x`, such as `.add` and `.dbl` used above.
         assert G1().deserialize(ECp_serialize(x)) == X and X.serialize() == ECp_serialize(x)
+
+    # Test infinity/zero conversions
+    from bn254 import ECp, ECp2
+    assert G1_to_ECp(ECp_to_G1(ECp())) == ECp()
+    assert ECp_to_G1(G1_to_ECp(G1())) == G1()
+    assert G2_to_ECp2(ECp2_to_G2(ECp2())) == ECp2()
+    assert ECp2_to_G2(G2_to_ECp2(G2())) == G2()
+    assert G1().deserialize(ECp_serialize(ECp())) == G1() and G1().serialize() == ECp_serialize(ECp())
 
 
 def assert_bilinearity():
@@ -1325,4 +1341,3 @@ def assert_sane():
 # assert_serializable()
 assert_sane()
 # assert_compatible()
-
