@@ -80,6 +80,7 @@ class lib:
         return int()
     def mclBnG1_hashAndMapTo(x, buf, bufSize):
         """mclBnG1 *x, const void *buf, mclSize bufSize"""
+        # https://github.com/herumi/mcl/blob/master/include/mcl/ec.hpp#L771-L786
         return int()
     def mclBn_pairing(z, x, y):
         """mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y"""
@@ -151,6 +152,7 @@ class lib:
     def mclBnG2_mulVec(z, x, y, n):
         return None
     def mclBnG2_hashAndMapTo(x, buf, bufSize):
+        # https://github.com/herumi/mcl/blob/master/include/mcl/ec.hpp#L771-L786
         return int()
     def mclBnG2_isValid(x):
         return bool()
