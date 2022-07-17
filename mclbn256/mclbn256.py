@@ -641,7 +641,8 @@ class GT(Structure):  # mclBnGT type in C
 
     def tostr(self, io_mode=16, raw=True, length=1021):
         """
-        See https://github.com/herumi/mcl/blob/master/include/mcl/op.hpp#L30-L108 for details.
+        See https://github.com/herumi/mcl/blob/master/include/mcl/op.hpp#L30-L108 for IOmode details
+        See https://github.com/herumi/mcl/blob/master/include/mcl/ec.hpp#L1441-L1556 for serialize()
         //github.com/herumi/mcl/blob/0489e76cfae425ab9d3ec93952e9ae928ef86017/include/mcl/op.hpp#L30
         # define MCLBN_IO_EC_AFFINE 0
         # define MCLBN_IO_BINARY 2
@@ -651,6 +652,9 @@ class GT(Structure):  # mclBnGT type in C
         # define MCLBN_IO_0xHEX_LITTLE_ENDIAN 144
         # define MCLBN_IO_EC_PROJ 1024  // Jacobi coordinate for G1/G2  // 0
         # define MCLBN_IO_SERIALIZE_HEX_STR 2048  // 144
+        IoMode={IoAuto,IoBin,IoDec,IoHex,IoArray,IoArrayRaw,IoPrefix,IoBinPrefix,IoHexPrefix,IoEcAff
+        ine,IoEcCompY,IoSerialize,IoFixedSizeByteSeq,IoEcProj,IoSerializeHexStr,IoEcAffineSerialize=
+        0,2,10,16,32,64,128,130,144,0,256,512,512,1024,2048,4096}
         """
         sv = create_string_buffer(b"\x00" * length)
         ret_len = lib.mclBnGT_getStr(sv, length, self.d, io_mode)
