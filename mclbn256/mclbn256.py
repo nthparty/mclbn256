@@ -80,6 +80,7 @@ class lib:
         return int()
     def mclBnG1_hashAndMapTo(x, buf, bufSize):
         """mclBnG1 *x, const void *buf, mclSize bufSize"""
+        # https://github.com/herumi/mcl/blob/master/include/mcl/ec.hpp#L771-L786
         return int()
     def mclBn_pairing(z, x, y):
         """mclBnGT *z, const mclBnG1 *x, const mclBnG2 *y"""
@@ -151,6 +152,7 @@ class lib:
     def mclBnG2_mulVec(z, x, y, n):
         return None
     def mclBnG2_hashAndMapTo(x, buf, bufSize):
+        # https://github.com/herumi/mcl/blob/master/include/mcl/ec.hpp#L771-L786
         return int()
     def mclBnG2_isValid(x):
         return bool()
@@ -411,6 +413,7 @@ class Fr(Structure):
 
     def tostr(self, io_mode=16, raw=True, length=1021):
         """
+        See https://github.com/herumi/mcl/blob/master/include/mcl/op.hpp#L30-L108 for details.
         # define MCLBN_IO_EC_AFFINE 0
         # define MCLBN_IO_BINARY 2
         # define MCLBN_IO_DECIMAL 10
@@ -640,6 +643,9 @@ class GT(Structure):  # mclBnGT type in C
 
     def tostr(self, io_mode=16, raw=True, length=1021):
         """
+        See https://github.com/herumi/mcl/blob/master/include/mcl/op.hpp#L30-L108 for IOmode details
+        See https://github.com/herumi/mcl/blob/master/include/mcl/ec.hpp#L1441-L1556 for serialize()
+        //github.com/herumi/mcl/blob/0489e76cfae425ab9d3ec93952e9ae928ef86017/include/mcl/op.hpp#L30
         # define MCLBN_IO_EC_AFFINE 0
         # define MCLBN_IO_BINARY 2
         # define MCLBN_IO_DECIMAL 10
@@ -648,6 +654,9 @@ class GT(Structure):  # mclBnGT type in C
         # define MCLBN_IO_0xHEX_LITTLE_ENDIAN 144
         # define MCLBN_IO_EC_PROJ 1024  // Jacobi coordinate for G1/G2  // 0
         # define MCLBN_IO_SERIALIZE_HEX_STR 2048  // 144
+        IoMode={IoAuto,IoBin,IoDec,IoHex,IoArray,IoArrayRaw,IoPrefix,IoBinPrefix,IoHexPrefix,IoEcAff
+        ine,IoEcCompY,IoSerialize,IoFixedSizeByteSeq,IoEcProj,IoSerializeHexStr,IoEcAffineSerialize=
+        0,2,10,16,32,64,128,130,144,0,256,512,512,1024,2048,4096}
         """
         sv = create_string_buffer(b"\x00" * length)
         ret_len = lib.mclBnGT_getStr(sv, length, self.d, io_mode)
@@ -845,6 +854,7 @@ class G1(Structure):  # mclBnG1 type in C
 
     def tostr(self, io_mode=16, raw=True, length=1021):
         """
+        See https://github.com/herumi/mcl/blob/master/include/mcl/op.hpp#L30-L108 for details.
         # define MCLBN_IO_EC_AFFINE 0
         # define MCLBN_IO_BINARY 2
         # define MCLBN_IO_DECIMAL 10
@@ -1069,6 +1079,7 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
 
     def tostr(self, io_mode=16, raw=True, length=1021):
         """
+        See https://github.com/herumi/mcl/blob/master/include/mcl/op.hpp#L30-L108 for details.
         # define MCLBN_IO_EC_AFFINE 0
         # define MCLBN_IO_BINARY 2
         # define MCLBN_IO_DECIMAL 10
@@ -1152,39 +1163,61 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
 
 
 def G1_to_ECp(p):
-    import bn254
+    from bn254 import ECp
+    if p.zero():
+        return ECp()  # Note: bn254.ECp().toBytes(1) == b'\x02' + b"\x00" * 32
     return (
-        lambda X : (lambda x : (x if x.setxy(*map(int, X.tostr(10).decode().split(' ')[-2:])) else None))(bn254.ECp())
+        lambda X : (lambda x : (x if x.setxy(*map(int, X.tostr(10).decode().split(' ')[-2:])) else None))(ECp())
     )(p)
 
 
-def ECp_to_G1(p):
+def ECp_to_G1(x):
     # import bn254
+    if x.isinf():
+        return G1()#.fromstr(b"\x00"*32, 32)  # Note: bn254.ECp().toBytes(1) == b'\x02' + b"\x00" * 32
     try:
         return (
-            lambda x : G1().fromstr(str(x).replace(',', ' ').replace('(', '1 ').replace(')', '').encode())
-        )(p)
+            lambda p : G1().fromstr(str(p).replace(',', ' ').replace('(', '1 ').replace(')', '').encode())
+        )(x)
     except ValueError:
         return None
 
 
-def G2_to_ECp2(p):
-    import bn254
+def G2_to_ECp2(q):
+    from bn254 import ECp2, Fp, Fp2
+    if q.zero():
+        return ECp2()  # Note: bn254.ECp2().toBytes(1) == b'\x02' + b"\x00" * 64
     return (
         lambda Y: (
             lambda y: (
                 # y if y.setxy(*map(int, Y.tostr(10).decode().split(' ')[-4:])) else None
-                y if y.set(*(lambda u,v,t,w: (bn254.Fp2(bn254.Fp(u), bn254.Fp(v)), bn254.Fp2(bn254.Fp(t), bn254.Fp(w))) )(*map(int, Y.tostr(10).decode().split(' ')[-4:]))) else None
-            ))(bn254.ECp2())
-    )(p)
+                y if y.set(*(lambda u,v,t,w: (Fp2(Fp(u), Fp(v)), Fp2(Fp(t), Fp(w))) )(*map(int, Y.tostr(10).decode().split(' ')[-4:]))) else None
+            ))(ECp2())
+    )(q)
 
 
 def ECp2_to_G2(y):
     # import bn254
+    if y.isinf():
+        return G2()#.fromstr(b"\x00"*64, 64)  # Note: bn254.ECp2().toBytes(1) == b'\x02' + b"\x00" * 64
     try:
         return G2().fromstr(
             ('1 ' + ' '.join(map(str, (lambda y1, y2: list(y1.get()) + list(y2.get()))(*y.get())))).encode(), 10
         )
+    except ValueError:
+        return None
+
+
+def ECp_serialize(p):
+    # import bn254
+    if p.isinf():
+        return b"\x00"*32  # bytes([0]*32)
+    try:
+        return (
+                lambda p: bytes((lambda x, y: (lambda ps: (lambda ret,_: ret)(
+                    ps, ps.append(ps.pop() ^ ((y%2)<<7)))
+                                               )(list(x.to_bytes(32, 'little'))))(*p.get()))
+        )(p)
     except ValueError:
         return None
 
@@ -1220,6 +1253,17 @@ def assert_compatible():
 
         # print(y)
         # print(Y)
+
+        x = G1_to_ECp(X)  # Note: Many `x._()` methods mutate `x`, such as `.add` and `.dbl` used above.
+        assert G1().deserialize(ECp_serialize(x)) == X and X.serialize() == ECp_serialize(x)
+
+    # Test infinity/zero conversions
+    from bn254 import ECp, ECp2
+    assert G1_to_ECp(ECp_to_G1(ECp())) == ECp()
+    assert ECp_to_G1(G1_to_ECp(G1())) == G1()
+    assert G2_to_ECp2(ECp2_to_G2(ECp2())) == ECp2()
+    assert ECp2_to_G2(G2_to_ECp2(G2())) == G2()
+    assert G1().deserialize(ECp_serialize(ECp())) == G1() and G1().serialize() == ECp_serialize(ECp())
 
 
 def assert_bilinearity():
@@ -1299,4 +1343,3 @@ def assert_sane():
 # assert_serializable()
 assert_sane()
 # assert_compatible()
-

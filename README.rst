@@ -15,15 +15,19 @@ Package Installation and Usage
 The package is available on
 `PyPI <https://pypi.org/project/mclbn254/>`__:
 
+.. highlight:: shell
+
 ::
 
    pip install mclbn256
 
 The library can be imported in the usual ways:
 
+.. highlight:: python
+
 ::
 
-   import mclbn256  # All required data structures
+   import mclbn256  # Abstracted 'dumb' API over the scalar and point groups
    from mclbn256 import mclbn256  # Extended attributes, internals, classes, test methods
 
 Examples
@@ -63,6 +67,13 @@ included as well:
    64
    >>> len((G1().randomize() @ G2().randomize()).serialize()) <= 384
    True
+   
+The representation of BN254 points and scalars in this library is compatible with the pure-Python `bn254 <https://pypi.org/project/bn254/>`__ implementation thanks to ``ECp_to_G1`` and the other similarly-named helpers.  We may also convert points in that library's representation to the minimal-size MCl `serial <https://github.com/herumi/mcl/blob/0489e76cfae425ab9d3ec93952e9ae928ef86017/include/mcl/op.hpp#L78-L103>`__ format using ``ECp_serialize`.
+
+::
+
+    >>> Q = G1.random(); G1().deserialize(ECp_serialize(G1_to_ECp(Q))) == Q and Q.serialize() == ECp_serialize(G1_to_ECp(Q))
+    True
 
 Please see the package
 `oblivious <https://pypi.org/project/oblivious/>`__ (which extends this
