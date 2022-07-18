@@ -363,8 +363,10 @@ class Fr(Structure):
 
     def __init__(self, value=None, *args, **kw):
         super().__init__(*args, **kw)
-        if value:
+        if type(value) is int:#value != None:
             self.setInt(value)
+        elif type(value) is bytes:#value != None:
+            self.fromstr(value, 32)
         else:
             self.setRnd()
 
