@@ -72,7 +72,6 @@ The representation of BN254 points and scalars in this library is compatible wit
 
 ::
 
-    >>> ECp_serialize = lambda p: bytes((lambda x, y: (lambda ps: (lambda ret,_: ret)(ps, ps.append(ps.pop() ^ ((y%2)<<7))) )(list(x.to_bytes(32, 'little'))))(*p.get()))
     >>> Q = G1.random(); G1().deserialize(ECp_serialize(G1_to_ECp(Q))) == Q and Q.serialize() == ECp_serialize(G1_to_ECp(Q))
     True
 
