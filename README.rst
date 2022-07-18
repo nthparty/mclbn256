@@ -15,15 +15,11 @@ Package Installation and Usage
 The package is available on
 `PyPI <https://pypi.org/project/mclbn254/>`__:
 
-.. highlight:: shell
-
 ::
 
    pip install mclbn256
 
 The library can be imported in the usual ways:
-
-.. highlight:: python
 
 ::
 
