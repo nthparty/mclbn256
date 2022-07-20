@@ -361,14 +361,25 @@ def reenable_memoization(): global use_memo; use_memo = True
 class Fr(Structure):
     _fields_ = [("d", mclBnFr_bytes)]
 
+    def __new__(cls, *args, **kwargs):
+        s = Structure.__new__(cls)
+        Fr.__init__(s, *args, **kwargs)
+        return s
+
     def __init__(self, value=None, *args, **kw):
         super().__init__(*args, **kw)
-        if type(value) is int:#value != None:
+        if isinstance(value, int):#value != None:
             self.setInt(value)
-        elif type(value) is bytes:#value != None:
+        elif type(value) is bytes:#value != None:     # isinstance(s, str)
             self.fromstr(value, 32)
+        elif isinstance(value, Fr):#value != None:
+            # self.__init__(bytes(value))  # or __init__(int(value))
+            self.d = value.d
         else:
             self.setRnd()
+
+    def __bytes__(self):
+        return self.tostr(32)  # (for only `Fr`) this is the same as `self.serialize()`
 
     def __str__(self):
         return self.tostr(10).decode()
@@ -482,45 +493,45 @@ class Fr(Structure):
         return ret
 
     def __add__(self, other):
-        assert(type(other) is Fr)
+        assert(isinstance(other, Fr))
         ret = Fr()
         lib.mclBnFr_add(ret.d, self.d, other.d)
         return ret
 
     def __sub__(self, other):
-        assert(type(other) is Fr)
+        assert(isinstance(other, Fr))
         ret = Fr()
         lib.mclBnFr_sub(ret.d, self.d, other.d)
         return ret
 
     def __mul__(self, other):
-        assert(type(other) is Fr)
+        assert(isinstance(other, Fr))
         ret = Fr()
         lib.mclBnFr_mul(ret.d, self.d, other.d)
         return ret
 
     def __pow__(self, other):
-        #assert(type(other) is Fr)
+        #assert(isinstance(other, Fr))
         r = 0x2523648240000001ba344d8000000007ff9f800000000010a10000000000000d
         return Fr(int(self).__pow__(int(other), r))
         #return Fr(pow(int(self), int(other), r))
 
     # def __mod__(self, other):
-    #     assert(type(other) is Fr)
+    #     assert(isinstance(other, Fr))
     #     return self - ((self//other) * other)
 
     def __mod__(self, other):
-        #assert(type(other) is Fr)
+        #assert(isinstance(other, Fr))
         return Fr(int(self).__mod__(int(other)))
 
     def __truediv__(self, other):
-        assert(type(other) is Fr)
+        assert(isinstance(other, Fr))
         ret = Fr()
         lib.mclBnFr_div(ret.d, self.d, other.d)
         return ret
 
     def __floordiv__(self, other):
-        assert(type(other) is Fr)
+        assert(isinstance(other, Fr))
         return Fr(int(self).__floordiv__(int(other)))
 
     def sqr(self):
@@ -704,10 +715,24 @@ class GT(Structure):  # mclBnGT type in C
 class G1(Structure):  # mclBnG1 type in C
     _fields_ = [("d", mclBnG1_bytes)]
 
+    def __new__(cls, *args, **kwargs):
+        # print('new')
+        p = Structure.__new__(cls)
+        G1.__init__(p, *args, **kwargs)
+        return p
+        # return Structure.__new__(cls, *args, **kwargs)#object.__new__(cls)
+
+    def __bytes__(self):
+        return self.serialize()
+
     def __init__(self, value=None, *args, **kw):
+        # print('__init__')
         super().__init__(*args, **kw)
-        if value:
-            self.hash(value)
+        if type(value) == str or type(value) == bytes:    # isinstance(s, str)
+            G1.hash(self, value)
+        elif isinstance(value, G1):
+            # print('got G1')
+            self.d = value.d
         else:
             # self.randomize()
             pass
@@ -726,20 +751,20 @@ class G1(Structure):  # mclBnG1 type in C
     def randomize(self):
         sr = Fr(); sr.setRnd()
         lib.mclBnG1_hashAndMapTo(self.d, sr.d, 32)
-        return self.mul(sr)
+        return self.mul_in_place(sr)
 
     @classmethod
     def random(cls):
         self = G1()
         sr = Fr(); sr.setRnd()
         lib.mclBnG1_hashAndMapTo(self.d, sr.d, 32)
-        return self.mul(sr)
+        return self.mul_in_place(sr)
 
     # def hash(self, s):
     #     return lib.mclBnG1_hashAndMapTo(self.d, c_wchar_p(s), len(s))
     def hash(self, s):
         h = blake2b()
-        if type(s) is str: s = s.encode()
+        if type(s) is str: s = s.encode()    # isinstance(s, str)
         h.update(s)
         h = h.digest()[:16]
         ret = lib.mclBnG1_hashAndMapTo(self.d, c_char_p(h), 16)
@@ -841,6 +866,14 @@ class G1(Structure):  # mclBnG1 type in C
             raise ValueError("MCl library call failed.")
         return result
 
+    def mul_in_place(self, other: Fr):
+        x = self.d
+        y = other.d
+        libretval = lib.mclBnG1_mul(x, x, y)
+        if libretval == -1:
+            raise ValueError("MCl library call failed.")
+        return self
+
     def __mul__(self, other):  # Again: Would it be good for me to enforce ordering?  Oblivious would just do this anyway.
         return self.mul(other)
 
@@ -891,7 +924,7 @@ class G1(Structure):  # mclBnG1 type in C
         return G1()._deserialize(s, length)
 
     def pairing(self, other):# -> void
-        #assert(type(other) is G2)
+        #assert(isinstance(other, G2))
         if use_memo:
             if not other.coeff:
                 other.coeff = other.precompute()
@@ -966,7 +999,7 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
 
     def hash(self, s):
         h = blake2b()
-        if type(s) is str: s = s.encode()
+        if type(s) is str: s = s.encode()    # isinstance(s, str)
         h.update(s)
         h = h.digest()[:16]
         ret = lib.mclBnG2_hashAndMapTo(self.d, c_char_p(h), 16)
@@ -1116,7 +1149,7 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
         return G2()._deserialize(s, length)
 
     def pairing(self, other):# -> void
-        # assert(type(other) is G1)
+        # assert(isinstance(other, G1))
         if use_memo:
             if not self.coeff:
                 self.coeff = self.precompute()
