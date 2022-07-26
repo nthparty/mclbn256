@@ -370,11 +370,13 @@ class Fr(Structure):
         super().__init__(*args, **kw)
         if isinstance(value, int):#value != None:
             self.setInt(value)
-        elif type(value) is bytes:#value != None:     # isinstance(s, str)
+        elif isinstance(value, bytes):#value != None:     # isinstance(value, str)
             self.fromstr(value, 32)
         elif isinstance(value, Fr):#value != None:
             # self.__init__(bytes(value))  # or __init__(int(value))
             self.s = value.s
+        elif isinstance(value, bytearray):
+            self.__init__(bytes(value))
         else:
             self.setRnd()
 
@@ -568,10 +570,12 @@ class GT(Structure):  # mclBnGT type in C
 
     def __init__(self, value=None, *args, **kw):
         super().__init__(*args, **kw)
-        if type(value) is bytes:#value != None:
+        if isinstance(value, bytes):#value != None:     # isinstance(value, str)
             self.fromstr(value, 32)
         elif isinstance(value, GT):#value != None:
             self.d12 = value.d12
+        elif isinstance(value, bytearray):
+            self.__init__(bytes(value))
 
     def __bytes__(self):
         return self.tostr(32)#.serialize()
@@ -762,10 +766,14 @@ class G1(Structure):  # mclBnG1 type in C
 
     def __init__(self, value=None, *args, **kw):
         super().__init__(*args, **kw)
-        if type(value) == str or type(value) == bytes:    # isinstance(s, str)
+        if isinstance(value, str) or isinstance(value, bytes):
             G1.hash(self, value)
         elif isinstance(value, G1):
             self.d = value.d
+        if isinstance(value, bytes):#value != None:     # isinstance(value, str)
+            self.fromstr(value, 32)
+        elif isinstance(value, bytearray):
+            self.__init__(bytes(value))
         else:
             # self.randomize()
             pass
@@ -797,7 +805,7 @@ class G1(Structure):  # mclBnG1 type in C
     #     return lib.mclBnG1_hashAndMapTo(self.d, c_wchar_p(s), len(s))
     def hash(self, s):
         h = blake2b()
-        if type(s) is str: s = s.encode()    # isinstance(s, str)
+        if isinstance(s, str): s = s.encode()
         h.update(s)
         h = h.digest()[:16]
         ret = lib.mclBnG1_hashAndMapTo(self.d, c_char_p(h), 16)
@@ -1009,10 +1017,12 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
 
     def __init__(self, value=None, *args, **kw):
         super().__init__(*args, **kw)
-        if type(value) == str or type(value) == bytes:    # isinstance(s, str)
+        if isinstance(value, str) or isinstance(value, bytes):
             G2.hash(self, value)
         elif isinstance(value, G2):
             self.d2 = value.d2
+        elif isinstance(value, bytearray):
+            self.__init__(bytes(value))
         else:
             # self.randomize()
             pass
@@ -1042,7 +1052,7 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
 
     def hash(self, s):
         h = blake2b()
-        if type(s) is str: s = s.encode()    # isinstance(s, str)
+        if isinstance(s, str): s = s.encode()
         h.update(s)
         h = h.digest()[:16]
         ret = lib.mclBnG2_hashAndMapTo(self.d2, c_char_p(h), 16)
