@@ -770,8 +770,6 @@ class G1(Structure):  # mclBnG1 type in C
             G1.hash(self, value)
         elif isinstance(value, G1):
             self.d = value.d
-        if isinstance(value, bytes):#value != None:     # isinstance(value, str)
-            self.fromstr(value, 32)
         elif isinstance(value, bytearray):
             self.__init__(bytes(value))
         else:
