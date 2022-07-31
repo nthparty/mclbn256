@@ -964,6 +964,50 @@ class G1(Structure):  # mclBnG1 type in C
         lib.mclBnG1_hashAndMapTo(self.d, sr.s, 32)
         return self.mul_in_place(sr)
 
+    @classmethod
+    def mapfrom(cls, bs: bytes):# -> G1:
+        """
+        Map to G1 from a byte string representing the nearest valid x coordinate to the left.
+
+        The bytes string ``bs`` should be uniformly random and at least 254 bits long.
+
+        This method uses rejection sampling but due to the distribution of points, a timing attack
+        is unlikely to leak anything of significant use.  At worst, knowing the number of iterations
+        narrows down the selected point by the exponent of the statistical security parameter,
+        usually 40.
+        """
+        p = (lambda x: x * (x * (x * (36 * x - 36) + 24) - 6) + 1)(2 ** 62 + 2 ** 55 + 1)
+        x = int.from_bytes(bs, 'little') % p
+        one, x, y = Fp(1), Fp(x), None
+
+        while True:
+            x3_2 = (x.sqr() * x) + Fp(2)  # Note: `y^2 = x^3 + 0x + 2` for BN-254 points.
+            y = x3_2.sqrt()
+            if y.sqr() == x3_2:
+                if y.is_odd(): y = -y
+                break
+            x = x + one
+
+        return G1().fromstr(b'1' + x.tostr(64) + y.tostr(64), 64)
+
+        # import bn254
+        # p_mod = (lambda x: x * (x * (x * (36 * x - 36) + 24) - 6) + 1)(2 ** 62 + 2 ** 55 + 1)
+        # x = int.from_bytes(bs, 'little') % p_mod
+        # y = None
+        #
+        # while True:
+        #     x3_2 = (pow(x, 3, p_mod) + 2) % p_mod  # Note: `y^2 = x^3 + 0x + 2` for BN-254 points.
+        #     y = sqrt(x3_2, p_mod)
+        #
+        #     if y != None:
+        #         if y % 2 == 1: y = -y
+        #         break
+        #     x += 1
+        #
+        # p = bn254.ECp()
+        # p.setxy(x, y)
+        # return ECp_to_G1(p)
+
     # def hash(self, s):
     #     return lib.mclBnG1_hashAndMapTo(self.d, c_wchar_p(s), len(s))
     def hash(self, s):
