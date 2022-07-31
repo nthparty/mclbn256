@@ -552,6 +552,171 @@ class Fr(Structure):
     def __ne__(self, other):
         return not bool(lib.mclBnFr_isEqual(self.s, other.s))
 
+class Fp(Structure):
+    _fields_ = [("s", mclBnFp_bytes)]
+
+    def __new__(cls, *args, **kwargs):
+        s = Structure.__new__(cls)
+        Fp.__init__(s, *args, **kwargs)
+        return s
+
+    def __init__(self, value=None, *args, **kw):
+        super().__init__(*args, **kw)
+        if isinstance(value, int):
+            self.setInt(value)
+        elif isinstance(value, bytes):
+            self.fromstr(value, 32)
+        elif isinstance(value, Fp):
+            self.s = value.s
+        elif isinstance(value, bytearray):
+            self.__init__(bytes(value))
+        else:
+            self.setRnd()
+
+    def __bytes__(self):
+        return self.tostr(32)
+
+    def __str__(self):
+        return self.tostr(10).decode()
+
+    def __int__(self):
+        id = lambda s: s
+        sign, unsign = (int.__neg__, Fp.__neg__) if self.is_negative() else (id, id)
+        return sign(int.from_bytes(unsign(self).tostr(32), 'little'))
+
+    def setInt(self, value):
+        self.fromstr(int.to_bytes(abs(value), 32, 'little'), 32)
+        if value < 0: self.negate()
+
+    def setRnd(self):
+        lib.mclBnFp_setByCSPRNG(self.s)
+
+    def randomize(self):
+        self.setRnd()
+        return self
+
+    def fromstr(self, s, io_mode=16):
+        ret = lib.mclBnFp_setStr(self.s, c_char_p(s), len(s), io_mode)
+        if ret:
+            raise ValueError("MCl failed to return from Fp:getStr, ioMode=" + str(io_mode))
+        return self
+    @classmethod
+
+    def new_fromstr(cls, s, io_mode=16):
+        return Fp().fromstr(s, io_mode)
+
+    def tostr(self, io_mode=16, raw=True, length=1021):
+        """ See https://github.com/herumi/mcl/blob/master/include/mcl/op.hpp """
+        sv = create_string_buffer(b"\x00" * length)
+        ret_len = lib.mclBnFp_getStr(sv, length, self.s, io_mode)
+        if ret_len == 0:
+            raise ValueError("MCl failed to return from Fp:getStr, ioMode=" + str(io_mode))
+        return sv.value if not raw else sv.raw[:ret_len]
+
+    def serialize(self, raw=True, length=1021):
+        sv = create_string_buffer(b"\x00" * length)
+        ret_len = lib.mclBnFp_serialize(sv, length, self.s)
+        if ret_len == 0:
+            raise ValueError("MCl failed to return from GT:serialize")
+        return sv.value if not raw else sv.raw[:ret_len]
+
+    def _deserialize(self, s, length=None):
+        sv = create_string_buffer(s)
+        ret_len = lib.mclBnFp_deserialize(self.s, sv, length or len(sv))
+        if ret_len == 0:
+            raise ValueError("MCl failed to return from GT:deserialize")
+        return self
+    @classmethod
+
+    def deserialize(cls, s, length=None):
+        return Fp()._deserialize(s, length)
+
+    def is_zero(self):
+        return bool(lib.mclBnFp_isZero(self.s))
+
+    def is_one(self):
+        return bool(lib.mclBnFp_isOne(self.s))
+
+    def is_odd(self):
+        return bool(lib.mclBnFp_isOdd(self.s))
+
+    def is_valid(self):
+        return bool(lib.mclBnFp_isValid(self.s))
+
+    def is_negative(self):
+        return bool(lib.mclBnFp_isNegative(self.s))
+
+    def __neg__(self):
+        ret = Fp()
+        lib.mclBnFp_neg(ret.s, self.s)
+        return ret
+
+    def negate(self):
+        lib.mclBnFp_neg(self.s, self.s)
+
+    def __invert__(self):
+        ret = Fp()
+        lib.mclBnFp_inv(ret.s, self.s)
+        return ret
+
+    def __add__(self, other):
+        assert (isinstance(other, Fp))
+        ret = Fp()
+        lib.mclBnFp_add(ret.s, self.s, other.s)
+        return ret
+
+    def __sub__(self, other):
+        assert (isinstance(other, Fp))
+        ret = Fp()
+        lib.mclBnFp_sub(ret.s, self.s, other.s)
+        return ret
+
+    def __mul__(self, other):
+        assert (isinstance(other, Fp))
+        ret = Fp()
+        lib.mclBnFp_mul(ret.s, self.s, other.s)
+        return ret
+
+    def __pow__(self, other):
+        # r = 0x2523648240000001ba344d8000000007ff9f800000000010a10000000000000d
+        # r = (lambda x: 36*x*x*x*x - 36*x*x*x + 18*x*x - 6*x + 1)(0x4080000000000001)
+        # r = (lambda x: x*(x*(x*((x-1)*36)+18)-6)+1)(0x4080000000000001)
+        # r = (lambda x: x*(x*(x*(36*x-36)+18)-6)+1)(0x4080000000000001)
+        # p = 0x2523648240000001ba344d80000000086121000000000013a700000000000013
+        # p = (lambda x: 36*x*x*x*x - 36*x*x*x + 24*x*x - 6*x + 1)(0x4080000000000001)
+        # p = (lambda x: x*(x*(x*((x-1)*36)+24)-6)+1)(0x4080000000000001)
+        p = (lambda x: x*(x*(x*(36*x -36) + 24) - 6) + 1)(2**62 + 2**55 + 1)
+        return Fp(int(self).__pow__(int(other), p))
+
+    def __mod__(self, other):
+        return Fp(int(self).__mod__(int(other)))
+
+    def __truediv__(self, other):
+        assert (isinstance(other, Fp))
+        ret = Fp()
+        lib.mclBnFp_div(ret.s, self.s, other.s)
+        return ret
+
+    def __floordiv__(self, other):
+        assert (isinstance(other, Fp))
+        return Fp(int(self).__floordiv__(int(other)))
+
+    def sqr(self):
+        ret = Fp()
+        lib.mclBnFp_sqr(ret.s, self.s)
+        return ret
+
+    def sqrt(self):
+        ret = Fp()
+        lib.mclBnFp_squareRoot(ret.s, self.s)
+        return ret
+
+    def __eq__(self, other):
+        return bool(lib.mclBnFp_isEqual(self.s, other.s))
+
+    def __ne__(self, other):
+        return not bool(lib.mclBnFp_isEqual(self.s, other.s))
+
 class Fp6Array(Structure):  # 4 * 6 * 70 unsigned longs = 13440 bytes per precomputed and memoized point in G2
     _fields_ = [("s6", mclBnFp_bytes * 6 * precomputedQcoeffSize)]
     def __bytes__(self):
