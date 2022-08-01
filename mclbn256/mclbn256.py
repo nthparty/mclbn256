@@ -977,7 +977,7 @@ class G1(Structure):  # mclBnG1 type in C
         usually 40.
         """
         p = (lambda x: x * (x * (x * (36 * x - 36) + 24) - 6) + 1)(2 ** 62 + 2 ** 55 + 1)
-        x = int.from_bytes(bs, 'little') % p
+        x = int.from_bytes(bs, 'little')# % p
         one, x, y = Fp(1), Fp(x), None
 
         while True:
