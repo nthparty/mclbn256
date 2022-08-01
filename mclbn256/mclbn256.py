@@ -1,5 +1,5 @@
 from ctypes import Structure, c_uint64, cdll, c_char_p, create_string_buffer
-from hashlib import blake2b
+from hashlib import blake2b, sha256
 import platform
 import pkg_resources
 
@@ -977,6 +977,10 @@ class G1(Structure):  # mclBnG1 type in C
         usually 40.
         """
         p = (lambda x: x * (x * (x * (36 * x - 36) + 24) - 6) + 1)(2 ** 62 + 2 ** 55 + 1)
+        while int.from_bytes(bs, 'little') >= p:
+            bs = sha256(bs).digest()
+            # bs[-1] &= 0b00111111
+            bs = bs[:-1] + bytes([bs[-1] & 0b00111111])
         x = int.from_bytes(bs, 'little')# % p
         one, x, y = Fp(1), Fp(x), None
 
@@ -1256,6 +1260,16 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
         sr = Fr(); sr.setRnd()
         lib.mclBnG2_hashAndMapTo(self.d2, sr.s, 32)
         return self.mul_in_place(sr)
+
+    @classmethod
+    def mapfrom(cls, bs: bytes):# -> G2:
+        """
+        Map to G2 from a byte string representing the nearest valid x coordinate to the left.
+
+        The bytes string ``bs`` should be uniform in [0, r) and thus usually close to 254 bits long.
+        """
+        r = (lambda x: x * (x * (x * (36 * x - 36) + 18) - 6) + 1)(2 ** 62 + 2 ** 55 + 1)
+        return G2.base_point() * Fr(int.from_bytes(bs, 'little') % r)
 
     def hash(self, s):
         h = blake2b()
