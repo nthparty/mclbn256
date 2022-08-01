@@ -979,13 +979,12 @@ class G1(Structure):  # mclBnG1 type in C
         p = (lambda x: x * (x * (x * (36 * x - 36) + 24) - 6) + 1)(2 ** 62 + 2 ** 55 + 1)
         while int.from_bytes(bs, 'little') >= p:
             bs = sha256(bs).digest()
-            # bs[-1] &= 0b00111111
-            bs = bs[:-1] + bytes([bs[-1] & 0b00111111])
+            bs = bs[:-1] + bytes([bs[-1] & (0xff >> (256-254))])
         x = int.from_bytes(bs, 'little')# % p
-        one, x, y = Fp(1), Fp(x), None
+        one, two, x, y = Fp(1), Fp(2), Fp(x), None
 
         while True:
-            x3_2 = (x.sqr() * x) + Fp(2)  # Note: `y^2 = x^3 + 0x + 2` for BN-254 points.
+            x3_2 = (x.sqr() * x) + two  # Note: `y^2 = x^3 + 0x + 2` for BN-254 points.
             y = x3_2.sqrt()
             if y.sqr() == x3_2:
                 if y.is_odd(): y = -y
