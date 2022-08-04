@@ -1,6 +1,6 @@
 [project]
 name = "mclbn256"
-version = "0.8.0"
+version = "1.0.0"
 description = """\
     Python bindings for the BN254/256 pairing-friendly curve \
     supported by the MCl library.\
