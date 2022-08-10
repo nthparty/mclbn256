@@ -735,6 +735,8 @@ class GT(Structure):  # mclBnGT type in C
 
     def __init__(self, value=None, *args, **kw):
         super().__init__(*args, **kw)
+        if not self.zero():
+            return
         if isinstance(value, bytes):#value != None:     # isinstance(value, str)
             self.fromstr(value, 32)
         elif isinstance(value, GT):#value != None:
@@ -931,6 +933,8 @@ class G1(Structure):  # mclBnG1 type in C
 
     def __init__(self, value=None, *args, **kw):
         super().__init__(*args, **kw)
+        if not self.zero():
+            return
         if isinstance(value, str) or isinstance(value, bytes):
             G1.hash(self, value)
         elif isinstance(value, G1):
@@ -1227,6 +1231,8 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
 
     def __init__(self, value=None, *args, **kw):
         super().__init__(*args, **kw)
+        if not self.zero():
+            return
         if isinstance(value, str) or isinstance(value, bytes):
             G2.hash(self, value)
         elif isinstance(value, G2):
