@@ -754,9 +754,9 @@ class GT(Structure):  # mclBnGT type in C
     def clear(self):# -> void
         x = self.d12
         retval = lib.mclBnGT_clear(x)
-        if retval:
+        if retval == -1:
             raise ValueError("MCl library call failed.")
-        return retval
+        return self
 
     def neg(self):# -> void
         result = GT()
@@ -769,6 +769,27 @@ class GT(Structure):  # mclBnGT type in C
 
     def __neg__(self):
         return self.neg()
+
+    def inv(self):# -> void
+        result = GT()
+        z = result.d12
+        x = self.d12
+        libretval = lib.mclBnGT_inv(z, x)
+        if libretval == -1:
+            raise ValueError("MCl library call failed.")
+        return result
+
+    def invert(self):
+        return self.inv()
+
+    def inverse(self):
+        return self.inv()
+
+    def __invert__(self):
+        return self.inv()
+
+    def __inv__(self):
+        return self.inv()
 
     def add(self, other):# -> void
         assert isinstance(other, GT)
@@ -1041,9 +1062,9 @@ class G1(Structure):  # mclBnG1 type in C
     def clear(self):# -> void
         x = self.d
         retval = lib.mclBnG1_clear(x)
-        if retval:
+        if retval == -1:
             raise ValueError("MCl library call failed.")
-        return retval
+        return self
 
     @classmethod
     def base_point(cls):# -> int
@@ -1178,7 +1199,7 @@ class G1(Structure):  # mclBnG1 type in C
     def deserialize(cls, s, length=None):
         return G1()._deserialize(s, length)
 
-    def pairing(self, other):# -> void
+    def pairing(self, other, use_final_exp=True):# -> void
         #assert(isinstance(other, G2))
         if use_memo:
             if not other.coeff:
@@ -1186,10 +1207,13 @@ class G1(Structure):  # mclBnG1 type in C
 
             result = GT()
             lib.mclBn_precomputedMillerLoop(result.d12, self.d, other.coeff.s6)
-            return result.final_exp()
+            return result.final_exp() if use_final_exp else result
         else:
             result = GT()
-            lib.mclBn_pairing(result.d12, self.d, other.d2)
+            if use_final_exp:
+                lib.mclBn_pairing(result.d12, self.d, other.d2)
+            else:
+                lib.mclBn_millerLoop(result.d12, self.d, other.d2)
             return result
 
     def __matmul__(self, other):
@@ -1300,9 +1324,9 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
     def clear(self):# -> void
         x = self.d2
         retval = lib.mclBnG2_clear(x)
-        if retval:
+        if retval == -1:
             raise ValueError("MCl library call failed.")
-        return retval
+        return self
 
     @classmethod
     def base_point(cls):# -> int
@@ -1435,7 +1459,7 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
     def deserialize(cls, s, length=None):
         return G2()._deserialize(s, length)
 
-    def pairing(self, other):# -> void
+    def pairing(self, other, use_final_exp=True):# -> void
         # assert(isinstance(other, G1))
         if use_memo:
             if not self.coeff:
@@ -1443,10 +1467,13 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
 
             result = GT()
             lib.mclBn_precomputedMillerLoop(result.d12, other.d, self.coeff.s6)  # sorted, so use the reverse order
-            return result.final_exp()
+            return result.final_exp() if use_final_exp else result
         else:
             result = GT()
-            lib.mclBn_pairing(result.d12, other.d, self.d2)  # sorted, so use the reverse order
+            if use_final_exp:
+                lib.mclBn_pairing(result.d12, other.d, self.d2)  # sorted, so use the reverse order
+            else:
+                lib.mclBn_millerLoop(result.d12, other.d, self.d2)  # sorted, so use the reverse order
             return result
 
     def precompute(self):# -> void
