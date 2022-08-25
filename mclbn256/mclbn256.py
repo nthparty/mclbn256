@@ -368,6 +368,8 @@ class Fr(Structure):
 
     def __init__(self, value=None, *args, **kw):
         super().__init__(*args, **kw)
+        if not self.is_zero():
+            return
         if isinstance(value, int):#value != None:
             self.setInt(value)
         elif isinstance(value, bytes):#value != None:     # isinstance(value, str)
@@ -562,6 +564,8 @@ class Fp(Structure):
 
     def __init__(self, value=None, *args, **kw):
         super().__init__(*args, **kw)
+        if not self.is_zero():
+            return
         if isinstance(value, int):
             self.setInt(value)
         elif isinstance(value, bytes):
@@ -1132,6 +1136,13 @@ class G1(Structure):  # mclBnG1 type in C
             raise ValueError("MCl library call failed.")
         return result
 
+    def normalize_in_place(self):
+        x = self.d
+        libretval = lib.mclBnG1_normalize(x, x)
+        if libretval == -1:
+            raise ValueError("MCl library call failed.")
+        return self
+
     def mul(self, other: Fr):# -> void     # Would it be good for me to enforce ordering?  Oblivious would just do this anyway.
         result = G1()
         z = result.d
@@ -1391,6 +1402,13 @@ class G2(Structure):  # mclBnG2 type in C, see bn.h
         if libretval == -1:
             raise ValueError("MCl library call failed.")
         return result
+
+    def normalize_in_place(self):
+        x = self.d2
+        libretval = lib.mclBnG2_normalize(x, x)
+        if libretval == -1:
+            raise ValueError("MCl library call failed.")
+        return self
 
     def mul(self, other):# -> void
         result = G2()
