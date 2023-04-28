@@ -286,8 +286,8 @@ jobs:
             DOWNLOAD_URL: "https://www.python.org/ftp/python/3.8.2/python-3.8.2-macosx10.9.pkg"
             VERSION: "3.8"
   macos-arm:
-    name: "Python ${{ matrix.PYTHON.VERSION }} for ABI ${{ matrix.PYTHON.ABI_VERSION }} on macOS"
-    runs-on: macOS-11
+    name: "Python ${{ matrix.PYTHON.VERSION }} for ABI ${{ matrix.PYTHON.ABI_VERSION }} on macOS ARM"
+    runs-on: [self-hosted, macos, ARM64]
     steps:
       -
         uses: actions/checkout@v2
