@@ -22,12 +22,14 @@ jobs:
         name: "Package mclbn256 for all supported platforms and package managers"
         run: |
             pushd publishing/
-            .venv/bin/python repack.py
+            ../.venv/bin/python repack.py
             popd
       -
         name: "Upload wheel file."
         run: |
             ls -halR build/
+            echo "--"
+            ls -halR publishing/build/
       -
         uses: actions/upload-artifact@v1
         with:
@@ -36,8 +38,9 @@ jobs:
     strategy:
       matrix:
         PYTHON:
-          - cp37-cp37m
-          - cp38-cp38
-          - cp39-cp39
+          #- cp37-cp37m
+          #- cp38-cp38
+          #- cp39-cp39
           - cp310-cp310
+          #- cp311-cp311
 
