@@ -17,7 +17,7 @@ jobs:
             /opt/python/${{ matrix.PYTHON }}/bin/python -m virtualenv .venv
       -
         name: "Install Python dependencies for packaging process."
-        run: ".venv/bin/pip install -U pip pystache toml"
+        run: ".venv/bin/pip install -U pip pystache toml packaging"
       -
         name: "Package mclbn256 for all supported platforms and package managers"
         run: |
