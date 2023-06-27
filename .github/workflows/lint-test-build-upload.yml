@@ -27,8 +27,8 @@ jobs:
       -
         name: "Upload wheel file."
         run: |
-            ls -halR build/
-            echo "--"
+            #ls -halR build/
+            #echo "--"
             ls -halR publishing/build/
       -
         uses: actions/upload-artifact@v1
