@@ -1,0 +1,52 @@
+"""
+Load the bn254 mcl shared object file and its mcl core dependency from this directory
+(with filepaths constructed for GH Actions), and write it to disk in a temporary file
+location. The mcl binary can then be read from disk directly and exported when the
+library is invoked without depending on linkage by the host OS.
+"""
+import platform
+import tempfile
+import sys
+import os
+
+# Determine OS type
+pl = platform.system()
+arch = platform.processor()
+
+# Read hex-encoded mcl shared object file.
+mclbn256_bs = bytes.fromhex('{{{BINARY_HEX_1}}}')  # pylint: disable=line-too-long
+if True:#arch == 'arm':
+    mcl_bs = bytes.fromhex('{{{BINARY_HEX_2}}}')  # pylint: disable=line-too-long
+
+# Generate a temporary folder structure on disk to which to write the mcl binaries.
+temp_dir = tempfile.TemporaryDirectory()  # pylint: disable=consider-using-with
+LOADER_TEMP_PATH = temp_dir.name
+if False: print(LOADER_TEMP_PATH)
+os.makedirs(os.path.join(LOADER_TEMP_PATH, 'lib'))
+LIB_EXT = ".dll" if pl == "Windows" else ".dylib" if pl == "Darwin" else ".so"
+if len(mcl_bs) > 0: fd_libmcl = open(os.path.join(LOADER_TEMP_PATH, 'lib', 'libmcl'+LIB_EXT), "wb")
+fd_libmclbn256 = open(os.path.join(LOADER_TEMP_PATH, 'libmclbn256'+LIB_EXT), "wb")
+if len(mcl_bs) > 0: fd_libmcl.write(mcl_bs)
+fd_libmclbn256.write(mclbn256_bs)
+
+# Close temp file to avoid multiprocess access error on Windows
+if len(mcl_bs) > 0: fd_libmcl.close()
+fd_libmclbn256.close()
+# Manual cleanup is optional, but saves ~1mb of space on dist immediately after being called.
+cleanup = temp_dir.cleanup
+
+loaded_libraries = {}
+if len(mcl_bs) > 0:
+    loaded_libraries['libmcl'] \
+        = cdll.LoadLibrary(os.path.join(LOADER_TEMP_PATH, os.path.join('lib', 'libmcl'+LIB_EXT)))
+loaded_libraries['libmclbn256'] \
+        = cdll.LoadLibrary(os.path.join(LOADER_TEMP_PATH, 'libmclbn256'+LIB_EXT))
+
+def load_library(path_name):
+    return loaded_libraries[path_name]
+      #cdll.LoadLibrary(os.path.join(LOADER_TEMP_PATH, path_name+LIB_EXT))
+
+
+cleanup()
+#print('Python has cleaned up mclbn256.')
+#print('end.')
