@@ -113,6 +113,7 @@ jobs:
           - cp38-cp38
           - cp39-cp39
           - cp310-cp310
+          - cp311-cp311
   macos:
     name: "Python ${{ matrix.PYTHON.VERSION }} for ABI ${{ matrix.PYTHON.ABI_VERSION }} on macOS"
     runs-on: macOS-latest
@@ -196,9 +197,24 @@ jobs:
         PYTHON:
           -
             ABI_VERSION: "3.6"
+            BIN_PATH: /Library/Frameworks/Python.framework/Versions/3.8/bin/python3
+            DOWNLOAD_URL: "https://www.python.org/ftp/python/3.8.9/python-3.8.9-macosx10.9.pkg"
+            VERSION: "3.8"
+          -
+            ABI_VERSION: "3.6"
+            BIN_PATH: /Library/Frameworks/Python.framework/Versions/3.9/bin/python3
+            DOWNLOAD_URL: "https://www.python.org/ftp/python/3.9.12/python-3.9.12-macos11.pkg"
+            VERSION: "3.9"
+          -
+            ABI_VERSION: "3.6"
             BIN_PATH: /Library/Frameworks/Python.framework/Versions/3.10/bin/python3
             DOWNLOAD_URL: "https://www.python.org/ftp/python/3.10.5/python-3.10.5-macos11.pkg"
             VERSION: "3.10"
+          -
+            ABI_VERSION: "3.6"
+            BIN_PATH: /Library/Frameworks/Python.framework/Versions/3.11/bin/python3
+            DOWNLOAD_URL: "https://www.python.org/ftp/python/3.11.6/python-3.11.6-macos11.pkg"
+            VERSION: "3.11"
   macos-10:
     name: "Python ${{ matrix.PYTHON.VERSION }} for ABI ${{ matrix.PYTHON.ABI_VERSION }} on macOS"
     runs-on: macOS-10.15
@@ -497,7 +513,10 @@ jobs:
           - {ARCH: 'x86', SODIUM_ARCH: 'Win32', VS_ARCH: 'x86'}
           - {ARCH: 'x64', SODIUM_ARCH: 'x64', VS_ARCH: 'amd64'}
         PYTHON:
+          - {VERSION: "3.8", SODIUM_MSVC_VERSION: "v142", "USE_ABI3": "true", "ABI_VERSION": "cp36"}
           - {VERSION: "3.9", SODIUM_MSVC_VERSION: "v142", "USE_ABI3": "true", "ABI_VERSION": "cp36"}
+          - {VERSION: "3.10", SODIUM_MSVC_VERSION: "v142", "USE_ABI3": "true", "ABI_VERSION": "cp36"}
+          - {VERSION: "3.11", SODIUM_MSVC_VERSION: "v142", "USE_ABI3": "true", "ABI_VERSION": "cp36"}
     name: "${{ matrix.PYTHON.VERSION }} ${{ matrix.WINDOWS.ARCH }} ${{ matrix.PYTHON.ABI_VERSION }}"
     steps:
       - uses: actions/checkout@v2
