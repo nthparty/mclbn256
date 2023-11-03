@@ -22,7 +22,7 @@ import sys
 import zipfile
 from typing import Union
 import doctest
-import toml, configparser
+import configparser
 from packaging.tags import platform_tags#, parse_tag
 
 def build_wheel(pyproject_path: str, wheel_file_name: str = None, platform_tag: str = None) -> str:

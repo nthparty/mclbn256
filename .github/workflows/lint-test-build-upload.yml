@@ -19,7 +19,7 @@ jobs:
             ${{ matrix.PYTHON.BIN_PATH }} -m virtualenv venv
       -
         name: "Install Python dependencies for build process."
-        run: "venv/bin/pip install -U pip setuptools wheel build"
+        run: "venv/bin/pip install -U pip wheel build pystache"
       -
         name: "Download libsodium source tree archive and extract it."
         run: |
@@ -84,21 +84,21 @@ jobs:
     strategy:
       matrix:
         PYTHON:
-          -
-            ABI_VERSION: "3.6"
-            BIN_PATH: /Library/Frameworks/Python.framework/Versions/3.8/bin/python3
-            DOWNLOAD_URL: "https://www.python.org/ftp/python/3.8.9/python-3.8.9-macosx10.9.pkg"
-            VERSION: "3.8"
-          -
-            ABI_VERSION: "3.6"
-            BIN_PATH: /Library/Frameworks/Python.framework/Versions/3.9/bin/python3
-            DOWNLOAD_URL: "https://www.python.org/ftp/python/3.9.12/python-3.9.12-macos11.pkg"
-            VERSION: "3.9"
-          -
-            ABI_VERSION: "3.6"
-            BIN_PATH: /Library/Frameworks/Python.framework/Versions/3.10/bin/python3
-            DOWNLOAD_URL: "https://www.python.org/ftp/python/3.10.5/python-3.10.5-macos11.pkg"
-            VERSION: "3.10"
+          # -
+          #   ABI_VERSION: "3.6"
+          #   BIN_PATH: /Library/Frameworks/Python.framework/Versions/3.8/bin/python3
+          #   DOWNLOAD_URL: "https://www.python.org/ftp/python/3.8.9/python-3.8.9-macosx10.9.pkg"
+          #   VERSION: "3.8"
+          # -
+          #   ABI_VERSION: "3.6"
+          #   BIN_PATH: /Library/Frameworks/Python.framework/Versions/3.9/bin/python3
+          #   DOWNLOAD_URL: "https://www.python.org/ftp/python/3.9.12/python-3.9.12-macos11.pkg"
+          #   VERSION: "3.9"
+          # -
+          #   ABI_VERSION: "3.6"
+          #   BIN_PATH: /Library/Frameworks/Python.framework/Versions/3.10/bin/python3
+          #   DOWNLOAD_URL: "https://www.python.org/ftp/python/3.10.5/python-3.10.5-macos11.pkg"
+          #   VERSION: "3.10"
           -
             ABI_VERSION: "3.6"
             BIN_PATH: /Library/Frameworks/Python.framework/Versions/3.11/bin/python3
