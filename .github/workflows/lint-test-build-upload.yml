@@ -51,10 +51,10 @@ jobs:
 
             # Build
             # venv/bin/python -m build
-            venv/bin/python pack.py
+            venv/bin/python pack.py  # Uses truckle instead of setuptools.
 
             mkdir wheelhouse
-            mv *.whl wheelhouse
+            mv mclbn256/*.whl wheelhouse
       -
         name: "Test wheel installation."
         run: |
