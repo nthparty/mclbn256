@@ -30,6 +30,8 @@ IMPORT_PATCHES = [
     'mclbn256.tmpl',
 ]
 
+# chdir(abspath('..'))
+
 #
 # Find the specific platform tags on PyPI for the project you are working with.
 #
@@ -66,7 +68,7 @@ assert len(IMPORT_PATCHES) == 1 and "Support for multiple patches (edge case) is
 
 #data = {'hex://'+path.relpath(binaries[0], start=src_dir): bs.hex() for i, bs, filepath in enumerate(zip(bss, binary_path))}
 data = {'BINARY_HEX_'+str(i+1): bs.hex() for i, bs in enumerate(bss)}#{'BINARY_HEX': bs.hex()}
-template = open(IMPORT_PATCHES[0], encoding='utf-8').read()
+template = open(path.join('packaging', IMPORT_PATCHES[0]), encoding='utf-8').read()
 patched_code = pystache.render(template, data)
 
 def findReplace(directory, find, replace, filePattern):
