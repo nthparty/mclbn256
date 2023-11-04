@@ -679,7 +679,7 @@ class RawConfigParser(MutableMapping):
         read_ok = []
         for filename in filenames:
             try:
-                with open(filename, encoding='locale') as fp:
+                with open(filename) as fp:
                     self._read(fp, filename)
             except OSError:
                 continue
