@@ -33,10 +33,10 @@ IMPORT_PATCHES = [
 #
 # Find the specific platform tags on PyPI for the project you are working with.
 #
-plattag = 'macosx_12_0_universal2' # macOS universal bundle (x86/AMD+M1/M2/ARM 64-bit)
+# plattag = 'macosx_12_0_universal2' # macOS universal bundle (x86/AMD+M1/M2/ARM 64-bit)
 
 
-build_dir = path.join('.', 'build', plattag)
+build_dir = path.join('.', 'build')#, plattag)
 original_src_dir = path.join('.', PYPI_PACKAGE_NAME)
 if path.exists(build_dir):
     rmtree(build_dir)

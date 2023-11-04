@@ -662,7 +662,7 @@ class RawConfigParser(MutableMapping):
         opts.update(self._defaults)
         return list(opts.keys())
 
-    def read(self, filenames, encoding=None):
+    def read(self, filenames):
         """Read and parse a filename or an iterable of filenames.
 
         Files that cannot be opened are silently ignored; this is
@@ -676,11 +676,10 @@ class RawConfigParser(MutableMapping):
         """
         if isinstance(filenames, (str, bytes, os.PathLike)):
             filenames = [filenames]
-        encoding = io.text_encoding(encoding)
         read_ok = []
         for filename in filenames:
             try:
-                with open(filename, encoding=encoding) as fp:
+                with open(filename, encoding='locale') as fp:
                     self._read(fp, filename)
             except OSError:
                 continue
