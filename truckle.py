@@ -138,7 +138,7 @@ def build_wheel(pyproject_path: str, build_dir: str = None, platform_tag: str = 
             lambda read:
             fd.close() or read
         )(fd.read())
-    )(open(os.path.join(project_root, '..', '..', 'LICENSE'), 'rb')))
+    )(open(os.path.join(pyproject_path[:-len(infofile)], 'LICENSE'), 'rb')))
 
     wheel = ('WHEEL', F"Wheel-Version: 1.0\n" \
                       F"Generator: truckle (0.1.x)\n" \
