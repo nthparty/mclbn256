@@ -31,9 +31,9 @@ jobs:
             make
             ls lib
             cd ..
-            # Remove prebuilt binaries
-            rm mclbn256/libmclbn256.*
-            rm mclbn256/lib/libmcl.*
+            # Remove any stale/prebuilt binaries
+            rm -f mclbn256/libmclbn256.*
+            rm -f mclbn256/lib/libmcl.*
             # Copy binaries into Python module
             cp mcl-*/lib/libmclbn256.so mclbn256
             cp mcl-*/lib/libmcl.so mclbn256/lib
@@ -134,9 +134,9 @@ jobs:
             make
             ls lib
             cd ..
-            # Remove prebuilt binaries
-            rm mclbn256/libmclbn256.*
-            rm mclbn256/lib/libmcl.*
+            # Remove any stale/prebuilt binaries
+            rm -f mclbn256/libmclbn256.*
+            rm -f mclbn256/lib/libmcl.*
             # Copy binaries into Python module
             cp mcl-*/lib/libmclbn256.dylib mclbn256
             cp mcl-*/lib/libmcl.dylib mclbn256/lib
@@ -198,88 +198,88 @@ jobs:
             BIN_PATH: /Library/Frameworks/Python.framework/Versions/3.11/bin/python3
             DOWNLOAD_URL: "https://www.python.org/ftp/python/3.11.6/python-3.11.6-macos11.pkg"
             VERSION: "3.11"
-  macos-10:
-    name: "Python ${{ matrix.PYTHON.VERSION }} for ABI ${{ matrix.PYTHON.ABI_VERSION }} on macOS"
-    runs-on: macOS-10.15
-    steps:
-      -
-        uses: actions/checkout@v2
-      -
-        env:
-          PYTHON_DOWNLOAD_URL: "${{ matrix.PYTHON.DOWNLOAD_URL }}"
-        name: "Install Python."
-        run: |
-            curl "$PYTHON_DOWNLOAD_URL" -o python.pkg
-            sudo installer -pkg python.pkg -target /
-            ${{ matrix.PYTHON.BIN_PATH }} -m pip install -U virtualenv
-            ${{ matrix.PYTHON.BIN_PATH }} -m virtualenv venv
-      -
-        name: "Install Python dependencies for build process."
-        run: "venv/bin/pip install -U pip setuptools wheel build"
-      -
-        name: "Download libsodium source tree archive and extract it."
-        run: |
-            wget https://github.com/herumi/mcl/archive/refs/tags/v1.61.tar.gz
-            tar -xvzf *.tar.gz
-      -
-        env:
-          PYTHON_VERSION: "${{ matrix.PYTHON.ABI_VERSION }}"
-        name: "Build wheel file."
-        run: |
-            # Compile platform-dependent binaries
-            cd mcl*
-            make
-            ls lib
-            cd ..
-            # Remove prebuilt binaries
-            rm mclbn256/libmclbn256.*
-            rm mclbn256/lib/libmcl.*
-            # Copy binaries into Python module
-            cp mcl-*/lib/libmclbn256.dylib mclbn256
-            cp mcl-*/lib/libmcl.dylib mclbn256/lib
-            # Allow relative linking of libmcl.dylib dependency (also likely unused, but changing a link is easier than deleting one)
-            otool -L mclbn256/lib/libmcl.dylib  # dependency has only standard system dependencies
-            otool -L mclbn256/libmclbn256.dylib  # the BN254 build depends on lib/libmcl.so which may not be in any environment folder
-            install_name_tool -change lib/libmcl.dylib @loader_path/lib/libmcl.dylib mclbn256/libmclbn256.dylib
-            # Build
-            # venv/bin/python -m build
-            venv/bin/python pack.py  # Uses `truckle` instead of `setuptools` for wheel building.
-            mkdir wheelhouse
-            mv build/macos*/mclbn*.whl wheelhouse
-      -
-        name: "Test wheel installation."
-        run: |
-            ls wheelhouse
-            unzip -Zl wheelhouse/*.whl
-            # ls -R wheelhouse
-            venv/bin/pip install .
-            # venv/bin/pip install -f wheelhouse --no-index mclbn256
-      -
-        name: "Lint and test module (and compiled libsodium shared library file)."
-        run: |
-            venv/bin/python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"
-            # venv/bin/pip install -U pip pylint coverage nose
-            # venv/bin/python -m pylint mclbn256 # Check against linting rules.
-            # venv/bin/python mclbn256/mclbn256.py -v # Run doctests.
-            # venv/bin/python -m nose --cover-erase # Test using nose.
-      -
-        name: "Upload wheel file."
-        run: |
-            mkdir mclbn-wheelhouse
-            mv wheelhouse/mclbn*.whl mclbn-wheelhouse/
-      -
-        uses: actions/upload-artifact@v1
-        with:
-          name: "mclbn-0.3.3-macOS-10-amd-${{ matrix.PYTHON.VERSION }}"
-          path: mclbn-wheelhouse/
-    strategy:
-      matrix:
-        PYTHON:
-          -
-            ABI_VERSION: "3.6"
-            BIN_PATH: /Library/Frameworks/Python.framework/Versions/3.8/bin/python3
-            DOWNLOAD_URL: "https://www.python.org/ftp/python/3.8.2/python-3.8.2-macosx10.9.pkg"
-            VERSION: "3.8"
+  # macos-10:
+  #   name: "Python ${{ matrix.PYTHON.VERSION }} for ABI ${{ matrix.PYTHON.ABI_VERSION }} on macOS"
+  #   runs-on: macOS-10.15
+  #   steps:
+  #     -
+  #       uses: actions/checkout@v2
+  #     -
+  #       env:
+  #         PYTHON_DOWNLOAD_URL: "${{ matrix.PYTHON.DOWNLOAD_URL }}"
+  #       name: "Install Python."
+  #       run: |
+  #           curl "$PYTHON_DOWNLOAD_URL" -o python.pkg
+  #           sudo installer -pkg python.pkg -target /
+  #           ${{ matrix.PYTHON.BIN_PATH }} -m pip install -U virtualenv
+  #           ${{ matrix.PYTHON.BIN_PATH }} -m virtualenv venv
+  #     -
+  #       name: "Install Python dependencies for build process."
+  #       run: "venv/bin/pip install -U pip setuptools wheel build"
+  #     -
+  #       name: "Download libsodium source tree archive and extract it."
+  #       run: |
+  #           wget https://github.com/herumi/mcl/archive/refs/tags/v1.61.tar.gz
+  #           tar -xvzf *.tar.gz
+  #     -
+  #       env:
+  #         PYTHON_VERSION: "${{ matrix.PYTHON.ABI_VERSION }}"
+  #       name: "Build wheel file."
+  #       run: |
+  #           # Compile platform-dependent binaries
+  #           cd mcl*
+  #           make
+  #           ls lib
+  #           cd ..
+  #           # Remove any stale/prebuilt binaries
+  #           rm -f mclbn256/libmclbn256.*
+  #           rm -f mclbn256/lib/libmcl.*
+  #           # Copy binaries into Python module
+  #           cp mcl-*/lib/libmclbn256.dylib mclbn256
+  #           cp mcl-*/lib/libmcl.dylib mclbn256/lib
+  #           # Allow relative linking of libmcl.dylib dependency (also likely unused, but changing a link is easier than deleting one)
+  #           otool -L mclbn256/lib/libmcl.dylib  # dependency has only standard system dependencies
+  #           otool -L mclbn256/libmclbn256.dylib  # the BN254 build depends on lib/libmcl.so which may not be in any environment folder
+  #           install_name_tool -change lib/libmcl.dylib @loader_path/lib/libmcl.dylib mclbn256/libmclbn256.dylib
+  #           # Build
+  #           # venv/bin/python -m build
+  #           venv/bin/python pack.py  # Uses `truckle` instead of `setuptools` for wheel building.
+  #           mkdir wheelhouse
+  #           mv build/macos*/mclbn*.whl wheelhouse
+  #     -
+  #       name: "Test wheel installation."
+  #       run: |
+  #           ls wheelhouse
+  #           unzip -Zl wheelhouse/*.whl
+  #           # ls -R wheelhouse
+  #           venv/bin/pip install .
+  #           # venv/bin/pip install -f wheelhouse --no-index mclbn256
+  #     -
+  #       name: "Lint and test module (and compiled libsodium shared library file)."
+  #       run: |
+  #           venv/bin/python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"
+  #           # venv/bin/pip install -U pip pylint coverage nose
+  #           # venv/bin/python -m pylint mclbn256 # Check against linting rules.
+  #           # venv/bin/python mclbn256/mclbn256.py -v # Run doctests.
+  #           # venv/bin/python -m nose --cover-erase # Test using nose.
+  #     -
+  #       name: "Upload wheel file."
+  #       run: |
+  #           mkdir mclbn-wheelhouse
+  #           mv wheelhouse/mclbn*.whl mclbn-wheelhouse/
+  #     -
+  #       uses: actions/upload-artifact@v1
+  #       with:
+  #         name: "mclbn-0.3.3-macOS-10-amd-${{ matrix.PYTHON.VERSION }}"
+  #         path: mclbn-wheelhouse/
+  #   strategy:
+  #     matrix:
+  #       PYTHON:
+  #         -
+  #           ABI_VERSION: "3.6"
+  #           BIN_PATH: /Library/Frameworks/Python.framework/Versions/3.8/bin/python3
+  #           DOWNLOAD_URL: "https://www.python.org/ftp/python/3.8.2/python-3.8.2-macosx10.9.pkg"
+  #           VERSION: "3.8"
   macos-arm:
     name: "Python ${{ matrix.PYTHON.VERSION }} for ABI ${{ matrix.PYTHON.ABI_VERSION }} on macOS ARM"
     runs-on: [self-hosted, macos, ARM64]
@@ -313,9 +313,9 @@ jobs:
             make
             ls lib
             cd ..
-            # Remove prebuilt binaries
-            rm mclbn256/libmclbn256.*
-            rm mclbn256/lib/libmcl.*
+            # Remove any stale/prebuilt binaries
+            rm -f mclbn256/libmclbn256.*
+            rm -f mclbn256/lib/libmcl.*
             # Copy binaries into Python module
             cp mcl-*/lib/libmclbn256.dylib mclbn256
             cp mcl-*/lib/libmcl.dylib mclbn256/lib
@@ -390,9 +390,9 @@ jobs:
             make
             ls lib
             cd ..
-            # Remove prebuilt binaries
-            rm mclbn256/libmclbn256.*
-            rm mclbn256/lib/libmcl.*
+            # Remove any stale/prebuilt binaries
+            rm -f mclbn256/libmclbn256.*
+            rm -f mclbn256/lib/libmcl.*
             # Copy binaries into Python module
             cp mcl-*/lib/libmclbn256.so mclbn256
             cp mcl-*/lib/libmcl.so mclbn256/lib
@@ -532,10 +532,10 @@ jobs:
           ls wheelhouse
         shell: cmd
       - name: Test wheel installation.
-        run: pip list #pip install -f wheelhouse mclbn256 --no-index  # Commented out so Win32 doesn't complain about its wheel.
+        run: pip install -f wheelhouse mclbn256 --no-index  # Commented out so Win32 doesn't complain about its wheel.
       - name: Lint and test module (and compiled libsodium shared library file).
         run: |
-          python -c "pass" #python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"  # Commented out so Win32 doesn't complain about its wheel.
+          python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"  # Commented out so Win32 doesn't complain about its wheel.
           # python -m pip install -U pip pylint coverage nose
           # python -m pylint mclbn256 # Check against linting rules.
           # python mclbn256/mclbn256.py -v # Run doctests.
