@@ -25,7 +25,7 @@ import doctest
 import configparser
 from packaging.tags import platform_tags#, parse_tag
 
-def build_wheel(pyproject_path: str, wheel_file_name: str = None, platform_tag: str = None) -> str:
+def build_wheel(pyproject_path: str, build_dir: str = None, platform_tag: str = None) -> str:
     # pylint: disable=C0301 # Accommodates long link URLs.
     """
     Build a wheel.
@@ -40,7 +40,7 @@ def build_wheel(pyproject_path: str, wheel_file_name: str = None, platform_tag: 
 
     infofile = 'setup.cfg' if 'setup.cfg' in pyproject_path else ('pyproject.toml' if 'pyproject.toml' in pyproject_path else None)
     #
-    project_root = pyproject_path[:-len(infofile)]
+    project_root = build_dir#pyproject_path[:-len(infofile)]
     # project_root = os.path.abspath(extracted_wheel_path)
     #version_guess = [x for x in os.listdir(os.path.join(project_root, os.path.pardir)) if os.path.basename(project_root)+'-' in x and '.dist-info' in x][0][len(os.path.basename(project_root)+'-'):-len('.dist-info')]  # Usually this line would be unnecessary.
     #
@@ -57,7 +57,9 @@ def build_wheel(pyproject_path: str, wheel_file_name: str = None, platform_tag: 
     # print(pyproject)
 
     config = configparser.ConfigParser()
-    config.read(infofile)
+    config.read(pyproject_path)
+    print(pyproject_path)
+    print(build_dir)
     pyproject = config['metadata']
     assert pyproject['name'] == 'mclbn256'
 
@@ -76,17 +78,17 @@ def build_wheel(pyproject_path: str, wheel_file_name: str = None, platform_tag: 
 
 
     # {distribution}-{version}(-{build tag})?-{python tag}-{abi tag}-{platform tag}.whl
-    wheel_file_name = wheel_file_name or F"{pyproject['name']}-" \
-                                         F"{pyproject['version']}-" \
-                                         F"py3-" \
-                                         F"none-" \
-                                         F"{plattag}" \
-                                         F".whl"
+    wheel_file_name = F"{pyproject['name']}-" \
+                      F"{pyproject['version']}-" \
+                      F"py3-" \
+                      F"none-" \
+                      F"{plattag}" \
+                      F".whl"
 
     if os.path.isdir(os.path.join(project_root, pyproject['old_name'])):
-        module_root = os.path.join(project_root, pyproject['old_name'])
+        module_root = build_dir or os.path.join(project_root, pyproject['old_name'])
     elif os.path.isdir(os.path.join(project_root, 'src', pyproject['old_name'])):
-        module_root = os.path.join(project_root, 'src', pyproject['old_name'])
+        module_root = build_dir or os.path.join(project_root, 'src', pyproject['old_name'])
     else:
         raise ModuleNotFoundError("Cannot find module source!")
 
@@ -136,7 +138,7 @@ def build_wheel(pyproject_path: str, wheel_file_name: str = None, platform_tag: 
             lambda read:
             fd.close() or read
         )(fd.read())
-    )(open(os.path.join(project_root, 'LICENSE'), 'rb')))
+    )(open(os.path.join(project_root, '..', '..', 'LICENSE'), 'rb')))
 
     wheel = ('WHEEL', F"Wheel-Version: 1.0\n" \
                       F"Generator: truckle (0.1.x)\n" \
@@ -224,3 +226,12 @@ def build_wheel(pyproject_path: str, wheel_file_name: str = None, platform_tag: 
     os.chdir(pushed_directory)
 
     return os.path.join(project_root, wheel_file_name)
+
+
+if __name__ == "__main__":
+    doctest.testmod()  # pragma: no cover
+    # # truckle('/Users/whowe/Documents/GitHub/mclbn256/setup.cfg')
+    plattag = 'macosx_12_0_arm64'
+    build_wheel('/Users/whowe/Documents/GitHub/mclbn256/setup.cfg', platform_tag=plattag)
+    # # truckle('/Users/whowe/Documents/GitHub/truckle/pyproject['toml']')
+    # truckle('/Users/whowe/Documents/GitHub/lhe/pyproject['toml']')

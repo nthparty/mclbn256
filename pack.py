@@ -1,5 +1,5 @@
 import fnmatch
-from os import makedirs, path, listdir, walk, remove
+from os import makedirs, path, listdir, walk, remove, chdir, getcwd
 from os.path import abspath
 from shutil import rmtree, copytree
 from subprocess import check_call
@@ -83,8 +83,13 @@ def findReplace(directory, find, replace, filePattern):
 # Inject rendered source patch into src directory file(s).
 findReplace(src_dir, BINARY_IMPORTS[0], patched_code, "*.py")
 
-build_wheel(path.join('.', 'setup.cfg'), platform_tag=plattag)
-
+pushed_directory = getcwd()  # Does Python need push/popd functionality?
+chdir(build_dir)
+# print((path.join(build_dir)))
+# print(abspath(path.join(build_dir)))
+print((abspath(path.join(build_dir, '..', '..', 'setup.cfg')), abspath(path.join(build_dir))))
+build_wheel(abspath(path.join('.', '..', '..', 'setup.cfg')), build_dir=abspath(path.join('.')))#, platform_tag=plattag)
+chdir(pushed_directory)
 
 
 

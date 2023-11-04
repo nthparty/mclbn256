@@ -51,7 +51,7 @@ jobs:
 
             # Build
             # venv/bin/python -m build
-            venv/bin/python pack.py  # Uses truckle instead of setuptools.
+            venv/bin/python pack.py  # Uses `truckle` instead of `setuptools` for wheel building.
 
             mkdir wheelhouse
             mv mclbn256/*.whl wheelhouse
