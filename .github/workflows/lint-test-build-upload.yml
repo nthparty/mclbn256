@@ -368,30 +368,30 @@ jobs:
           echo
           ls mclbn256/
           cp mcl-*/bin/mclbn256.dll mclbn256/libmclbn256.dll
-          mkdir wheelhouse
-          # call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat" -no_logo -arch=${{ matrix.WINDOWS.VS_ARCH }}
-          python setup.py bdist_wheel --py-limited-api=${{ matrix.PYTHON.ABI_VERSION }}
-          # cp build/lib*/mclbn256/_MCL.pyd mclbn256
-          ls dist
-          mv dist/mclbn256*.whl wheelhouse
-          ls wheelhouse
-        shell: cmd
-      - name: Test wheel installation.
-        run: pip list #pip install -f wheelhouse mclbn256 --no-index  # Commented out so Win32 doesn't complain about its wheel.
+      #     mkdir wheelhouse
+      #     # call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat" -no_logo -arch=${{ matrix.WINDOWS.VS_ARCH }}
+      #     python setup.py bdist_wheel --py-limited-api=${{ matrix.PYTHON.ABI_VERSION }}
+      #     # cp build/lib*/mclbn256/_MCL.pyd mclbn256
+      #     ls dist
+      #     mv dist/mclbn256*.whl wheelhouse
+      #     ls wheelhouse
+      #   shell: cmd
+      # - name: Test wheel installation.
+      #   run: pip install -f wheelhouse mclbn256 --no-index
       - name: Lint and test module (and compiled MCl shared library file).
         run: |
-          python -c "pass" #python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"  # Commented out so Win32 doesn't complain about its wheel.
+          python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"  # Commented out so Win32 doesn't complain about its wheel.
           # python -m pip install -U pip pylint coverage nose
           # python -m pylint mclbn256 # Check against linting rules.
           # python mclbn256/mclbn256.py -v # Run doctests.
           # python -m nose --cover-erase # Test using nose.
-      - name: Upload wheel file.
-        run: |
-          mkdir mclbn256-wheelhouse
-          move wheelhouse\mclbn256*.whl mclbn256-wheelhouse\
-          # move mcl-*\* mclbn256-wheelhouse\
-          # move mcl-*\lib\mclbn256.dll mclbn256-wheelhouse\
-      - uses: actions/upload-artifact@v1
-        with:
-          name: "mclbn256-2.0.0-win-${{ matrix.WINDOWS.ARCH }}-${{ matrix.PYTHON.VERSION }}"
-          path: mclbn256-wheelhouse
+      # - name: Upload wheel file.
+      #   run: |
+      #     mkdir mclbn256-wheelhouse
+      #     move wheelhouse\mclbn256*.whl mclbn256-wheelhouse\
+      #     # move mcl-*\* mclbn256-wheelhouse\
+      #     # move mcl-*\lib\mclbn256.dll mclbn256-wheelhouse\
+      # - uses: actions/upload-artifact@v1
+      #   with:
+      #     name: "mclbn256-2.0.0-win-${{ matrix.WINDOWS.ARCH }}-${{ matrix.PYTHON.VERSION }}"
+      #     path: mclbn256-wheelhouse
