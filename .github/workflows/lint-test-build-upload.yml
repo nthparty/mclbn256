@@ -33,8 +33,8 @@ jobs:
             cd ..
 
             # Remove prebuilt binaries (if any are leftover from an old build).
-            rm -r mclbn256/libmclbn256.*
-            rm -r mclbn256/lib/libmcl.*
+            rm -f mclbn256/libmclbn256.*
+            rm -f mclbn256/lib/libmcl.*
 
             # Copy binaries into Python module.
             cp mcl-*/lib/libmclbn256.so mclbn256
@@ -148,8 +148,8 @@ jobs:
             cd ..
 
             # Remove prebuilt binaries (if any are leftover from an old build).
-            rm -r mclbn256/libmclbn256.*
-            rm -r mclbn256/lib/libmcl.*
+            rm -f mclbn256/libmclbn256.*
+            rm -f mclbn256/lib/libmcl.*
 
             # Copy binaries into Python module.
             cp mcl-*/lib/libmclbn256.dylib mclbn256
@@ -234,8 +234,8 @@ jobs:
             cd ..
 
             # Remove prebuilt binaries (if any are leftover from an old build).
-            rm -r mclbn256/libmclbn256.*
-            rm -r mclbn256/lib/libmcl.*
+            rm -f mclbn256/libmclbn256.*
+            rm -f mclbn256/lib/libmcl.*
 
             # Copy binaries into Python module.
             cp mcl-*/lib/libmclbn256.dylib mclbn256
@@ -315,8 +315,8 @@ jobs:
             cd ..
 
             # Remove prebuilt binaries (if any are leftover from an old build).
-            rm -r mclbn256/libmclbn256.*
-            rm -r mclbn256/lib/libmcl.*
+            rm -f mclbn256/libmclbn256.*
+            rm -f mclbn256/lib/libmcl.*
 
             # Copy binaries into Python module.
             cp mcl-*/lib/libmclbn256.so mclbn256
