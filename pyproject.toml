@@ -15,7 +15,7 @@ requires-python = ">=3.6"
 
 [project.urls]
 Repository = "https://github.com/nthparty/mclbn256"
-Bug Tracker = "https://github.com/nthparty/mclbn256/issues"
+"Bug Tracker" = "https://github.com/nthparty/mclbn256/issues"
 
 [project.optional-dependencies]
 docs = [
