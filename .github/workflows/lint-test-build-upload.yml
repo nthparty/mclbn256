@@ -75,17 +75,17 @@ jobs:
             patchelf --print-needed mclbn256/libmclbn256.so  # the lib/libmcl.so dependency should be relative now
 
 
-      #       # Build
-      #       .venv/bin/python -m build
+            # # Build
+            # .venv/bin/python -m build
 
-      #       mkdir tmpwheelhouse
-      #       mv dist/mclbn*.whl tmpwheelhouse
+            # mkdir tmpwheelhouse
+            # mv dist/mclbn*.whl tmpwheelhouse
             mkdir lib; cp mcl-*/lib/libmcl.so lib
-      #       mkdir tmpwheelhouse/lib; cp mcl-*/lib/libmcl.so tmpwheelhouse/lib
-      #       cp mcl-*/lib/libmcl.so /usr/local/bin
-      #       auditwheel repair tmpwheelhouse/mclbn*.whl -w wheelhouse/
-      #       # mkdir wheelhouse
-      #       # mv dist/mclbn*.whl wheelhouse
+            # mkdir tmpwheelhouse/lib; cp mcl-*/lib/libmcl.so tmpwheelhouse/lib
+            # cp mcl-*/lib/libmcl.so /usr/local/bin
+            # auditwheel repair tmpwheelhouse/mclbn*.whl -w wheelhouse/
+            # # mkdir wheelhouse
+            # # mv dist/mclbn*.whl wheelhouse
       # -
       #   name: "Test wheel installation."
       #   run: |
