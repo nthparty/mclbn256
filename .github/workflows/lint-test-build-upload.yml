@@ -96,16 +96,16 @@ jobs:
             #.venv/bin/python mclbn256/mclbn256.py -v # Run doctests.
             #.venv/bin/python -m nose --cover-erase # Test using nose.
             #.venv/bin/python -m coveralls --service=github # Submit to coveralls.
-      -
-        name: "Upload wheel file."
-        run: |
-            mkdir mclbn-wheelhouse
-            mv wheelhouse/mclbn*.whl mclbn-wheelhouse/
-      -
-        uses: actions/upload-artifact@v1
-        with:
-          name: "mclbn256-0.3.3-linux1-${{ matrix.PYTHON }}"
-          path: mclbn-wheelhouse/
+      # -
+      #   name: "Upload wheel file."
+      #   run: |
+      #       mkdir mclbn-wheelhouse
+      #       mv wheelhouse/mclbn*.whl mclbn-wheelhouse/
+      # -
+      #   uses: actions/upload-artifact@v1
+      #   with:
+      #     name: "mclbn256-0.3.3-linux1-${{ matrix.PYTHON }}"
+      #     path: mclbn-wheelhouse/
     strategy:
       matrix:
         PYTHON:
@@ -181,16 +181,16 @@ jobs:
             # venv/bin/python -m pylint mclbn256 # Check against linting rules.
             # venv/bin/python mclbn256/mclbn256.py -v # Run doctests.
             # venv/bin/python -m nose --cover-erase # Test using nose.
-      -
-        name: "Upload wheel file."
-        run: |
-            mkdir mclbn-wheelhouse
-            mv wheelhouse/mclbn*.whl mclbn-wheelhouse/
-      -
-        uses: actions/upload-artifact@v1
-        with:
-          name: "mclbn-0.3.3-macOS-11-amd-${{ matrix.PYTHON.VERSION }}"
-          path: mclbn-wheelhouse/
+      # -
+      #   name: "Upload wheel file."
+      #   run: |
+      #       mkdir mclbn-wheelhouse
+      #       mv wheelhouse/mclbn*.whl mclbn-wheelhouse/
+      # -
+      #   uses: actions/upload-artifact@v1
+      #   with:
+      #     name: "mclbn-0.3.3-macOS-11-amd-${{ matrix.PYTHON.VERSION }}"
+      #     path: mclbn-wheelhouse/
     strategy:
       matrix:
         PYTHON:
@@ -266,16 +266,16 @@ jobs:
             # venv/bin/python -m pylint mclbn256 # Check against linting rules.
             # venv/bin/python mclbn256/mclbn256.py -v # Run doctests.
             #venv/bin/python -m nose --cover-erase # Test using nose.  # mclbn256 0.2.0 has succeeded before but but errored at end [due to nose in 3.10 bug](https://github.com/nose-devs/nose/issues/1099)
-      -
-        name: "Upload wheel file."
-        run: |
-            mkdir mclbn-wheelhouse
-            mv wheelhouse/mclbn*.whl mclbn-wheelhouse/
-      -
-        uses: actions/upload-artifact@v1
-        with:
-          name: "mclbn-0.3.3-macOS-arm-${{ matrix.PYTHON.VERSION }}"
-          path: mclbn-wheelhouse/
+      # -
+      #   name: "Upload wheel file."
+      #   run: |
+      #       mkdir mclbn-wheelhouse
+      #       mv wheelhouse/mclbn*.whl mclbn-wheelhouse/
+      # -
+      #   uses: actions/upload-artifact@v1
+      #   with:
+      #     name: "mclbn-0.3.3-macOS-arm-${{ matrix.PYTHON.VERSION }}"
+      #     path: mclbn-wheelhouse/
     strategy:
       matrix:
         PYTHON:
@@ -386,16 +386,16 @@ jobs:
             #.venv/bin/python mclbn256/mclbn256.py -v # Run doctests.
             #.venv/bin/python -m nose --cover-erase # Test using nose.
             #.venv/bin/python -m coveralls --service=github # Submit to coveralls.
-      -
-        name: "Upload wheel file."
-        run: |
-            mkdir mclbn-wheelhouse
-            mv wheelhouse/mclbn*.whl mclbn-wheelhouse/
-      -
-        uses: actions/upload-artifact@v1
-        with:
-          name: "mclbn256-0.3.3-manylinux1-${{ matrix.PYTHON }}"
-          path: mclbn-wheelhouse/
+      # -
+      #   name: "Upload wheel file."
+      #   run: |
+      #       mkdir mclbn-wheelhouse
+      #       mv wheelhouse/mclbn*.whl mclbn-wheelhouse/
+      # -
+      #   uses: actions/upload-artifact@v1
+      #   with:
+      #     name: "mclbn256-0.3.3-manylinux1-${{ matrix.PYTHON }}"
+      #     path: mclbn-wheelhouse/
     strategy:
       matrix:
         PYTHON:
