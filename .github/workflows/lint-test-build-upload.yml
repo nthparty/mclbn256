@@ -1,289 +1,7 @@
 name: lint-test-build-upload
 on:
   push
-jobs: 
-  linux:
-    container: quay.io/pypa/manylinux2014_x86_64
-    name: "Python ${{ matrix.PYTHON }} on manylinux2014"
-    runs-on: ubuntu-latest
-    steps:
-      -
-        uses: actions/checkout@v2
-      -
-        name: "Install Python."
-        run: |
-            yum -y install wget libffi-devel patchelf
-            /opt/python/${{ matrix.PYTHON }}/bin/python -m pip install virtualenv
-            /opt/python/${{ matrix.PYTHON }}/bin/python -m virtualenv .venv
-      -
-        name: "Install Python dependencies for build process."
-        run: ".venv/bin/pip install -U pip setuptools wheel build"
-      -
-        name: "Download mcl source tree archive and extract it."
-        run: |
-            wget https://github.com/herumi/mcl/archive/refs/tags/v1.61.tar.gz
-            tar -xvzf *.tar.gz
-      -
-        name: "Build wheel file."
-        run: |
-            # Compile platform-dependent binaries.
-            cd mcl*
-            make
-            ls lib
-            cd ..
-
-            # Remove prebuilt binaries (if any are leftover from an old build).
-            rm -f mclbn256/libmclbn256.*
-            rm -f mclbn256/lib/libmcl.*
-
-            # Copy binaries into Python module.
-            cp mcl-*/lib/libmclbn256.so mclbn256
-            cp mcl-*/lib/libmcl.so mclbn256/lib
-
-
-            #
-            # Allow relative linking of libmcl.so dependency (also likely unused, but changing a link is easier than deleting one)
-            #
-            echo "Files linked to from lib/libmcl.so"
-            patchelf --print-needed mclbn256/lib/libmcl.so  # dependency has only standard system dependenciesendency (also likely unused, but changing a link is easier than deleting one)
-
-            echo "Files linked to from libmclbn256.so"
-            patchelf --print-needed mclbn256/libmclbn256.so  # the BN254 build depends on lib/libmcl.so which may not be in any environment folder
-
-            echo "patching..."
-            patchelf --replace-needed lib/libmcl.so \$ORIGIN/lib/libmcl.so mclbn256/libmclbn256.so
-
-            echo "Files linked to from libmclbn256.so"
-            patchelf --print-needed mclbn256/libmclbn256.so  # the lib/libmcl.so dependency should be relative now
-
-            echo "patching..."
-            patchelf --replace-needed libmcl.so \$ORIGIN/lib/libmcl.so mclbn256/libmclbn256.so
-
-            echo "Files linked to from libmclbn256.so"
-            patchelf --print-needed mclbn256/libmclbn256.so  # the lib/libmcl.so dependency should be relative now
-
-            echo "adding dependency...";#echo "patching..."
-            patchelf --add-needed \$ORIGIN/lib/libmcl.so mclbn256/libmclbn256.so
-            # patchelf --add-needed \$ORIGIN/libmcl.so mclbn256/libmclbn256.so
-
-            echo "Files linked to from libmclbn256.so"
-            patchelf --print-needed mclbn256/libmclbn256.so  # the lib/libmcl.so dependency should be relative now
-
-
-      #       # Build
-      #       .venv/bin/python -m build
-
-      #       # mkdir tmpwheelhouse
-      #       # mv dist/mclbn*.whl tmpwheelhouse
-      #       # auditwheel repair tmpwheelhouse/mclbn*.whl -w wheelhouse/
-      #       mkdir wheelhouse
-      #       mv dist/mclbn*.whl wheelhouse
-      # -
-      #   name: "Test wheel installation."
-      #   run: |
-      #       ls wheelhouse
-      #       unzip -Zl wheelhouse/*.whl
-      #       # ls -R wheelhouse
-      #       .venv/bin/pip install -f wheelhouse --no-index mclbn256
-      -
-        env:
-          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-        name: "Lint and test module (and compiled MCl shared library files)."
-        run: |
-            .venv/bin/python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"
-            #.venv/bin/pip install -U pylint coverage coveralls nose
-            #.venv/bin/python -m pylint mclbn256 # Check against linting rules.
-            #.venv/bin/python mclbn256/mclbn256.py -v # Run doctests.
-            #.venv/bin/python -m nose --cover-erase # Test using nose.
-            #.venv/bin/python -m coveralls --service=github # Submit to coveralls.
-      # -
-      #   name: "Upload wheel file."
-      #   run: |
-      #       mkdir mclbn-wheelhouse
-      #       mv wheelhouse/mclbn*.whl mclbn-wheelhouse/
-      # -
-      #   uses: actions/upload-artifact@v1
-      #   with:
-      #     name: "mclbn256-0.3.3-linux1-${{ matrix.PYTHON }}"
-      #     path: mclbn-wheelhouse/
-    strategy:
-      matrix:
-        PYTHON:
-          - cp37-cp37m
-          - cp38-cp38
-          - cp39-cp39
-          - cp310-cp310
-  macos:
-    name: "Python ${{ matrix.PYTHON.VERSION }} for ABI ${{ matrix.PYTHON.ABI_VERSION }} on macOS"
-    runs-on: macOS-latest
-    steps:
-      -
-        uses: actions/checkout@v2
-      -
-        env:
-          PYTHON_DOWNLOAD_URL: "${{ matrix.PYTHON.DOWNLOAD_URL }}"
-        name: "Install Python."
-        run: |
-            curl "$PYTHON_DOWNLOAD_URL" -o python.pkg
-            sudo installer -pkg python.pkg -target /
-            ${{ matrix.PYTHON.BIN_PATH }} -m pip install -U virtualenv
-            ${{ matrix.PYTHON.BIN_PATH }} -m virtualenv venv
-      -
-        name: "Install Python dependencies for build process."
-        run: "venv/bin/pip install -U pip setuptools wheel build"
-      -
-        name: "Download MCl source tree archive and extract it."
-        run: |
-            wget https://github.com/herumi/mcl/archive/refs/tags/v1.61.tar.gz
-            tar -xvzf *.tar.gz
-      -
-        env:
-          PYTHON_VERSION: "${{ matrix.PYTHON.ABI_VERSION }}"
-        name: "Build wheel file."
-        run: |
-            # Compile platform-dependent binaries.
-            cd mcl*
-            make
-            ls lib
-            cd ..
-
-            # Remove prebuilt binaries (if any are leftover from an old build).
-            rm -f mclbn256/libmclbn256.*
-            rm -f mclbn256/lib/libmcl.*
-
-            # Copy binaries into Python module.
-            cp mcl-*/lib/libmclbn256.dylib mclbn256
-            cp mcl-*/lib/libmcl.dylib mclbn256/lib
-
-            # Allow relative linking of libmcl.dylib dependency (also likely unused, but changing a link is easier than deleting one)
-            otool -L mclbn256/lib/libmcl.dylib  # dependency has only standard system dependencies
-            otool -L mclbn256/libmclbn256.dylib  # the BN254 build depends on lib/libmcl.so which may not be in any environment folder
-            install_name_tool -change lib/libmcl.dylib @loader_path/lib/libmcl.dylib mclbn256/libmclbn256.dylib
-
-      #       # Build
-      #       venv/bin/python -m build
-
-      #       mkdir wheelhouse
-      #       mv dist/mclbn*.whl wheelhouse
-      # -
-      #   name: "Test wheel installation."
-      #   run: |
-      #       ls wheelhouse
-      #       unzip -Zl wheelhouse/*.whl
-      #       # ls -R wheelhouse
-      #       venv/bin/pip install .
-      #       # venv/bin/pip install -f wheelhouse --no-index mclbn256
-      -
-        name: "Lint and test module (and compiled MCl shared library files)."
-        run: |
-            venv/bin/python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"
-            # venv/bin/pip install -U pip pylint coverage nose
-            # venv/bin/python -m pylint mclbn256 # Check against linting rules.
-            # venv/bin/python mclbn256/mclbn256.py -v # Run doctests.
-            # venv/bin/python -m nose --cover-erase # Test using nose.
-      # -
-      #   name: "Upload wheel file."
-      #   run: |
-      #       mkdir mclbn-wheelhouse
-      #       mv wheelhouse/mclbn*.whl mclbn-wheelhouse/
-      # -
-      #   uses: actions/upload-artifact@v1
-      #   with:
-      #     name: "mclbn-0.3.3-macOS-11-amd-${{ matrix.PYTHON.VERSION }}"
-      #     path: mclbn-wheelhouse/
-    strategy:
-      matrix:
-        PYTHON:
-          -
-            ABI_VERSION: "3.6"
-            BIN_PATH: /Library/Frameworks/Python.framework/Versions/3.10/bin/python3
-            DOWNLOAD_URL: "https://www.python.org/ftp/python/3.10.5/python-3.10.5-macos11.pkg"
-            VERSION: "3.10"
-  macos-arm:
-    name: "Python ${{ matrix.PYTHON.VERSION }} for ABI ${{ matrix.PYTHON.ABI_VERSION }} on macOS ARM"
-    runs-on: [self-hosted, macos, ARM64]
-    steps:
-      -
-        uses: actions/checkout@v2
-      -
-        env:
-          PYTHON_DOWNLOAD_URL: "${{ matrix.PYTHON.DOWNLOAD_URL }}"
-        name: "Install Python."
-        run: |
-            curl "$PYTHON_DOWNLOAD_URL" -o python.pkg
-            sudo installer -pkg python.pkg -target /
-            ${{ matrix.PYTHON.BIN_PATH }} -m pip install -U virtualenv
-            ${{ matrix.PYTHON.BIN_PATH }} -m virtualenv venv
-      -
-        name: "Install Python dependencies for build process."
-        run: "venv/bin/pip install -U pip setuptools wheel build"
-      -
-        name: "Download mcl source tree archive and extract it."
-        run: |
-            wget https://github.com/herumi/mcl/archive/refs/tags/v1.61.tar.gz
-            tar -xvzf *.tar.gz
-      -
-        env:
-          PYTHON_VERSION: "${{ matrix.PYTHON.ABI_VERSION }}"
-        name: "Build wheel file."
-        run: |
-            # Compile platform-dependent binaries.
-            cd mcl*
-            make
-            ls lib
-            cd ..
-
-            # Remove prebuilt binaries (if any are leftover from an old build).
-            rm -f mclbn256/libmclbn256.*
-            rm -f mclbn256/lib/libmcl.*
-
-            # Copy binaries into Python module.
-            cp mcl-*/lib/libmclbn256.dylib mclbn256
-            cp mcl-*/lib/libmcl.dylib mclbn256/lib
-
-            # Allow relative linking of libmcl.dylib dependency (also likely unused, but changing a link is easier than deleting one)
-            otool -L mclbn256/lib/libmcl.dylib  # dependency has only standard system dependencies
-            otool -L mclbn256/libmclbn256.dylib  # the BN254 build depends on lib/libmcl.so which may not be in any environment folder
-            install_name_tool -change lib/libmcl.dylib @loader_path/lib/libmcl.dylib mclbn256/libmclbn256.dylib
-
-      #       # Build
-      #       venv/bin/python -m build
-
-      #       mkdir wheelhouse
-      #       mv dist/mclbn*.whl wheelhouse
-      # -
-      #   name: "Test wheel installation."
-      #   run: |
-      #       ls wheelhouse
-      #       unzip -Zl wheelhouse/*.whl
-      #       # ls -R wheelhouse
-      #       venv/bin/pip install -f wheelhouse --no-index mclbn256
-      -
-        name: "Lint and test module (and compiled MCl shared library files)."
-        run: |
-            venv/bin/python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"
-            # venv/bin/pip install -U pip pylint coverage nose
-            # venv/bin/python -m pylint mclbn256 # Check against linting rules.
-            # venv/bin/python mclbn256/mclbn256.py -v # Run doctests.
-            #venv/bin/python -m nose --cover-erase # Test using nose.  # mclbn256 0.2.0 has succeeded before but but errored at end [due to nose in 3.10 bug](https://github.com/nose-devs/nose/issues/1099)
-      # -
-      #   name: "Upload wheel file."
-      #   run: |
-      #       mkdir mclbn-wheelhouse
-      #       mv wheelhouse/mclbn*.whl mclbn-wheelhouse/
-      # -
-      #   uses: actions/upload-artifact@v1
-      #   with:
-      #     name: "mclbn-0.3.3-macOS-arm-${{ matrix.PYTHON.VERSION }}"
-      #     path: mclbn-wheelhouse/
-    strategy:
-      matrix:
-        PYTHON:
-          -
-            ABI_VERSION: "3.6"
-            BIN_PATH: /Library/Frameworks/Python.framework/Versions/3.10/bin/python3
-            DOWNLOAD_URL: "https://www.python.org/ftp/python/3.10.1/python-3.10.1-macos11.pkg"
-            VERSION: "3.10"
+jobs:
   manylinux:
     container: quay.io/pypa/manylinux2014_x86_64
     name: "Python ${{ matrix.PYTHON }} on manylinux2014"
@@ -403,15 +121,209 @@ jobs:
           - cp38-cp38
           - cp39-cp39
           - cp310-cp310
+          - cp311-cp311
+  macos:
+    name: "Python ${{ matrix.PYTHON.VERSION }} for ABI ${{ matrix.PYTHON.ABI_VERSION }} on macOS"
+    runs-on: macOS-latest
+    steps:
+      -
+        uses: actions/checkout@v2
+      -
+        env:
+          PYTHON_DOWNLOAD_URL: "${{ matrix.PYTHON.DOWNLOAD_URL }}"
+        name: "Install Python."
+        run: |
+            curl "$PYTHON_DOWNLOAD_URL" -o python.pkg
+            sudo installer -pkg python.pkg -target /
+            ${{ matrix.PYTHON.BIN_PATH }} -m pip install -U virtualenv
+            ${{ matrix.PYTHON.BIN_PATH }} -m virtualenv venv
+      -
+        name: "Install Python dependencies for build process."
+        run: "venv/bin/pip install -U pip setuptools wheel build"
+      -
+        name: "Download MCl source tree archive and extract it."
+        run: |
+            wget https://github.com/herumi/mcl/archive/refs/tags/v1.61.tar.gz
+            tar -xvzf *.tar.gz
+      -
+        env:
+          PYTHON_VERSION: "${{ matrix.PYTHON.ABI_VERSION }}"
+        name: "Build wheel file."
+        run: |
+            # Compile platform-dependent binaries.
+            cd mcl*
+            make
+            ls lib
+            cd ..
+
+            # Remove prebuilt binaries (if any are leftover from an old build).
+            rm -f mclbn256/libmclbn256.*
+            rm -f mclbn256/lib/libmcl.*
+
+            # Copy binaries into Python module.
+            cp mcl-*/lib/libmclbn256.dylib mclbn256
+            cp mcl-*/lib/libmcl.dylib mclbn256/lib
+
+            # Allow relative linking of libmcl.dylib dependency (also likely unused, but changing a link is easier than deleting one)
+            otool -L mclbn256/lib/libmcl.dylib  # dependency has only standard system dependencies
+            otool -L mclbn256/libmclbn256.dylib  # the BN254 build depends on lib/libmcl.so which may not be in any environment folder
+            install_name_tool -change lib/libmcl.dylib @loader_path/lib/libmcl.dylib mclbn256/libmclbn256.dylib
+
+      #       # Build
+      #       venv/bin/python -m build
+
+      #       mkdir wheelhouse
+      #       mv dist/mclbn*.whl wheelhouse
+      # -
+      #   name: "Test wheel installation."
+      #   run: |
+      #       ls wheelhouse
+      #       unzip -Zl wheelhouse/*.whl
+      #       # ls -R wheelhouse
+      #       venv/bin/pip install .
+      #       # venv/bin/pip install -f wheelhouse --no-index mclbn256
+      -
+        name: "Lint and test module (and compiled MCl shared library files)."
+        run: |
+            venv/bin/python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"
+            # venv/bin/pip install -U pip pylint coverage nose
+            # venv/bin/python -m pylint mclbn256 # Check against linting rules.
+            # venv/bin/python mclbn256/mclbn256.py -v # Run doctests.
+            # venv/bin/python -m nose --cover-erase # Test using nose.
+      # -
+      #   name: "Upload wheel file."
+      #   run: |
+      #       mkdir mclbn-wheelhouse
+      #       mv wheelhouse/mclbn*.whl mclbn-wheelhouse/
+      # -
+      #   uses: actions/upload-artifact@v1
+      #   with:
+      #     name: "mclbn-0.3.3-macOS-11-amd-${{ matrix.PYTHON.VERSION }}"
+      #     path: mclbn-wheelhouse/
+    strategy:
+      matrix:
+        PYTHON:
+          -
+            ABI_VERSION: "3.6"
+            BIN_PATH: /Library/Frameworks/Python.framework/Versions/3.9/bin/python3
+            DOWNLOAD_URL: "https://www.python.org/ftp/python/3.9.12/python-3.9.12-macos11.pkg"
+            VERSION: "3.9"
+          -
+            ABI_VERSION: "3.6"
+            BIN_PATH: /Library/Frameworks/Python.framework/Versions/3.10/bin/python3
+            DOWNLOAD_URL: "https://www.python.org/ftp/python/3.10.5/python-3.10.5-macos11.pkg"
+            VERSION: "3.10"
+          -
+            ABI_VERSION: "3.6"
+            BIN_PATH: /Library/Frameworks/Python.framework/Versions/3.11/bin/python3
+            DOWNLOAD_URL: "https://www.python.org/ftp/python/3.11.6/python-3.11.6-macos11.pkg"
+            VERSION: "3.11"
+  macos-arm:
+    name: "Python ${{ matrix.PYTHON.VERSION }} for ABI ${{ matrix.PYTHON.ABI_VERSION }} on macOS ARM"
+    runs-on: [self-hosted, macos, ARM64]
+    steps:
+      -
+        uses: actions/checkout@v2
+      -
+        env:
+          PYTHON_DOWNLOAD_URL: "${{ matrix.PYTHON.DOWNLOAD_URL }}"
+        name: "Install Python."
+        run: |
+            curl "$PYTHON_DOWNLOAD_URL" -o python.pkg
+            sudo installer -pkg python.pkg -target /
+            ${{ matrix.PYTHON.BIN_PATH }} -m pip install -U virtualenv
+            ${{ matrix.PYTHON.BIN_PATH }} -m virtualenv venv
+      -
+        name: "Install Python dependencies for build process."
+        run: "venv/bin/pip install -U pip setuptools wheel build"
+      -
+        name: "Download mcl source tree archive and extract it."
+        run: |
+            wget https://github.com/herumi/mcl/archive/refs/tags/v1.61.tar.gz
+            tar -xvzf *.tar.gz
+      -
+        env:
+          PYTHON_VERSION: "${{ matrix.PYTHON.ABI_VERSION }}"
+        name: "Build wheel file."
+        run: |
+            # Compile platform-dependent binaries.
+            cd mcl*
+            make
+            ls lib
+            cd ..
+
+            # Remove prebuilt binaries (if any are leftover from an old build).
+            rm -f mclbn256/libmclbn256.*
+            rm -f mclbn256/lib/libmcl.*
+
+            # Copy binaries into Python module.
+            cp mcl-*/lib/libmclbn256.dylib mclbn256
+            cp mcl-*/lib/libmcl.dylib mclbn256/lib
+
+            # Allow relative linking of libmcl.dylib dependency (also likely unused, but changing a link is easier than deleting one)
+            otool -L mclbn256/lib/libmcl.dylib  # dependency has only standard system dependencies
+            otool -L mclbn256/libmclbn256.dylib  # the BN254 build depends on lib/libmcl.so which may not be in any environment folder
+            install_name_tool -change lib/libmcl.dylib @loader_path/lib/libmcl.dylib mclbn256/libmclbn256.dylib
+
+      #       # Build
+      #       venv/bin/python -m build
+
+      #       mkdir wheelhouse
+      #       mv dist/mclbn*.whl wheelhouse
+      # -
+      #   name: "Test wheel installation."
+      #   run: |
+      #       ls wheelhouse
+      #       unzip -Zl wheelhouse/*.whl
+      #       # ls -R wheelhouse
+      #       venv/bin/pip install -f wheelhouse --no-index mclbn256
+      -
+        name: "Lint and test module (and compiled MCl shared library files)."
+        run: |
+            venv/bin/python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"
+            # venv/bin/pip install -U pip pylint coverage nose
+            # venv/bin/python -m pylint mclbn256 # Check against linting rules.
+            # venv/bin/python mclbn256/mclbn256.py -v # Run doctests.
+            #venv/bin/python -m nose --cover-erase # Test using nose.  # mclbn256 0.2.0 has succeeded before but but errored at end [due to nose in 3.10 bug](https://github.com/nose-devs/nose/issues/1099)
+      # -
+      #   name: "Upload wheel file."
+      #   run: |
+      #       mkdir mclbn-wheelhouse
+      #       mv wheelhouse/mclbn*.whl mclbn-wheelhouse/
+      # -
+      #   uses: actions/upload-artifact@v1
+      #   with:
+      #     name: "mclbn-0.3.3-macOS-arm-${{ matrix.PYTHON.VERSION }}"
+      #     path: mclbn-wheelhouse/
+    strategy:
+      matrix:
+        PYTHON:
+          -
+            ABI_VERSION: "3.6"
+            BIN_PATH: /Library/Frameworks/Python.framework/Versions/3.9/bin/python3
+            DOWNLOAD_URL: "https://www.python.org/ftp/python/3.9.12/python-3.9.12-macos11.pkg"
+            VERSION: "3.9"
+          -
+            ABI_VERSION: "3.6"
+            BIN_PATH: /Library/Frameworks/Python.framework/Versions/3.10/bin/python3
+            DOWNLOAD_URL: "https://www.python.org/ftp/python/3.10.5/python-3.10.5-macos11.pkg"
+            VERSION: "3.10"
+          -
+            ABI_VERSION: "3.6"
+            BIN_PATH: /Library/Frameworks/Python.framework/Versions/3.11/bin/python3
+            DOWNLOAD_URL: "https://www.python.org/ftp/python/3.11.6/python-3.11.6-macos11.pkg"
+            VERSION: "3.11"
   windows:
     runs-on: windows-latest
     strategy:
       matrix:
         WINDOWS:
-          - {ARCH: 'x86', SODIUM_ARCH: 'Win32', VS_ARCH: 'x86'}
-          - {ARCH: 'x64', SODIUM_ARCH: 'x64', VS_ARCH: 'amd64'}
+          - {ARCH: 'x86', MCL_ARCH: 'Win32', VS_ARCH: 'x86'}
+          - {ARCH: 'x64', MCL_ARCH: 'x64', VS_ARCH: 'amd64'}
         PYTHON:
-          - {VERSION: "3.9", SODIUM_MSVC_VERSION: "v142", "USE_ABI3": "true", "ABI_VERSION": "cp36"}
+          - {VERSION: "3.9", MCL_MSVC_VERSION: "v142", "USE_ABI3": "true", "ABI_VERSION": "cp36"}
+          - {VERSION: "3.10", MCL_MSVC_VERSION: "v142", "USE_ABI3": "true", "ABI_VERSION": "cp36"}
+          - {VERSION: "3.11", MCL_MSVC_VERSION: "v142", "USE_ABI3": "true", "ABI_VERSION": "cp36"}
     name: "Python ${{ matrix.PYTHON.VERSION }} for ABI ${{ matrix.PYTHON.ABI_VERSION }} on Windows ${{ matrix.WINDOWS.ARCH }}"
     steps:
       - uses: actions/checkout@v2
@@ -435,7 +347,7 @@ jobs:
       - name: Add environment variables for MCl.
         run: |
           echo "INCLUDE=C:/MCl/include;$INCLUDE" >> $GITHUB_ENV
-          echo "LIB=C:/MCl/${{ matrix.WINDOWS.SODIUM_ARCH }}/release/${{ matrix.PYTHON.SODIUM_MSVC_VERSION }}/static;$LIB" >> $GITHUB_ENV
+          echo "LIB=C:/MCl/${{ matrix.WINDOWS.MCL_ARCH }}/release/${{ matrix.PYTHON.MCL_MSVC_VERSION }}/static;$LIB" >> $GITHUB_ENV
         shell: bash
       - name: Build DLL.
         run: |
@@ -459,7 +371,7 @@ jobs:
           mkdir wheelhouse
           # call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat" -no_logo -arch=${{ matrix.WINDOWS.VS_ARCH }}
           python setup.py bdist_wheel --py-limited-api=${{ matrix.PYTHON.ABI_VERSION }}
-          # cp build/lib*/mclbn256/_sodium.pyd mclbn256
+          # cp build/lib*/mclbn256/_MCL.pyd mclbn256
           ls dist
           mv dist/mclbn256*.whl wheelhouse
           ls wheelhouse
