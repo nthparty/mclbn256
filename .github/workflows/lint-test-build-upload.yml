@@ -383,7 +383,8 @@ jobs:
           # python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"
           # python -c "exec(\"import mclbn256\n mclbn256.mclbn256.assert_bilinearity()\n mclbn256.mclbn256.assert_serializable()\n print('pass') \")"
           # (echo "import mclbn256" ; echo "mclbn256.mclbn256.assert_bilinearity()" ; echo "mclbn256.mclbn256.assert_serializable()" ; echo "print('pass')") | python
-          echo "import mclbn256\nmclbn256.mclbn256.assert_bilinearity()\nmclbn256.mclbn256.assert_serializable()\nprint('pass')" | python
+          # echo "import mclbn256\nmclbn256.mclbn256.assert_bilinearity()\nmclbn256.mclbn256.assert_serializable()\nprint('pass')" | python
+          # https://github.com/nthparty/mclbn256/actions/runs/6782373143/job/18434469291#step:10:62   Windows is impossible for me to test, because I don't know how to escape the test code in a string.  None of the above will run without a shell-related error.
           # python -m pip install -U pip pylint coverage nose
           # python -m pylint mclbn256 # Check against linting rules.
           # python mclbn256/mclbn256.py -v # Run doctests.
