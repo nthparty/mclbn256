@@ -26,17 +26,17 @@ jobs:
       -
         name: "Build wheel file."
         run: |
-            # Compile platform-dependent binaries
+            # Compile platform-dependent binaries.
             cd mcl*
             make
             ls lib
             cd ..
 
-            # Remove prebuilt binaries
-            rm mclbn256/libmclbn256.*
-            rm mclbn256/lib/libmcl.*
+            # Remove prebuilt binaries (if any are leftover from an old build).
+            rm -r mclbn256/libmclbn256.*
+            rm -r mclbn256/lib/libmcl.*
 
-            # Copy binaries into Python module
+            # Copy binaries into Python module.
             cp mcl-*/lib/libmclbn256.so mclbn256
             cp mcl-*/lib/libmcl.so mclbn256/lib
 
@@ -141,17 +141,17 @@ jobs:
           PYTHON_VERSION: "${{ matrix.PYTHON.ABI_VERSION }}"
         name: "Build wheel file."
         run: |
-            # Compile platform-dependent binaries
+            # Compile platform-dependent binaries.
             cd mcl*
             make
             ls lib
             cd ..
 
-            # Remove prebuilt binaries
-            rm mclbn256/libmclbn256.*
-            rm mclbn256/lib/libmcl.*
+            # Remove prebuilt binaries (if any are leftover from an old build).
+            rm -r mclbn256/libmclbn256.*
+            rm -r mclbn256/lib/libmcl.*
 
-            # Copy binaries into Python module
+            # Copy binaries into Python module.
             cp mcl-*/lib/libmclbn256.dylib mclbn256
             cp mcl-*/lib/libmcl.dylib mclbn256/lib
 
@@ -227,17 +227,17 @@ jobs:
           PYTHON_VERSION: "${{ matrix.PYTHON.ABI_VERSION }}"
         name: "Build wheel file."
         run: |
-            # Compile platform-dependent binaries
+            # Compile platform-dependent binaries.
             cd mcl*
             make
             ls lib
             cd ..
 
-            # Remove prebuilt binaries
-            rm mclbn256/libmclbn256.*
-            rm mclbn256/lib/libmcl.*
+            # Remove prebuilt binaries (if any are leftover from an old build).
+            rm -r mclbn256/libmclbn256.*
+            rm -r mclbn256/lib/libmcl.*
 
-            # Copy binaries into Python module
+            # Copy binaries into Python module.
             cp mcl-*/lib/libmclbn256.dylib mclbn256
             cp mcl-*/lib/libmcl.dylib mclbn256/lib
 
@@ -308,17 +308,17 @@ jobs:
       -
         name: "Build wheel file."
         run: |
-            # Compile platform-dependent binaries
+            # Compile platform-dependent binaries.
             cd mcl*
             make
             ls lib
             cd ..
 
-            # Remove prebuilt binaries
-            rm mclbn256/libmclbn256.*
-            rm mclbn256/lib/libmcl.*
+            # Remove prebuilt binaries (if any are leftover from an old build).
+            rm -r mclbn256/libmclbn256.*
+            rm -r mclbn256/lib/libmcl.*
 
-            # Copy binaries into Python module
+            # Copy binaries into Python module.
             cp mcl-*/lib/libmclbn256.so mclbn256
             cp mcl-*/lib/libmcl.so mclbn256/lib
 
