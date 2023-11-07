@@ -80,7 +80,7 @@ jobs:
 
       #       mkdir tmpwheelhouse
       #       mv dist/mclbn*.whl tmpwheelhouse
-      #       mkdir lib; cp mcl-*/lib/libmcl.so lib
+            mkdir lib; cp mcl-*/lib/libmcl.so lib
       #       mkdir tmpwheelhouse/lib; cp mcl-*/lib/libmcl.so tmpwheelhouse/lib
       #       cp mcl-*/lib/libmcl.so /usr/local/bin
       #       auditwheel repair tmpwheelhouse/mclbn*.whl -w wheelhouse/
@@ -361,11 +361,11 @@ jobs:
       - name: Build wheel file.
         run: |
           ls mcl-*/lib/
-          echo
-          echo
+          # echo
+          # echo
           ls mcl-*/bin/
-          echo
-          echo
+          # echo
+          # echo
           ls mclbn256/
           cp mcl-*/bin/mclbn256.dll mclbn256/libmclbn256.dll
       #     mkdir wheelhouse
