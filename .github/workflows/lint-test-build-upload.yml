@@ -35,49 +35,37 @@ jobs:
             cp mcl-*/lib/libmclbn256.so mclbn256
             cp mcl-*/lib/libmcl.so mclbn256/lib
 
-            #
-            # Allow relative linking of libmcl.so dependency (also likely unused, but changing a link is easier than deleting one)
-            #
+            # Allow relative linking of libmcl.so dependency (also likely unused, but changing a link is easier than deleting one).
             echo "Files linked to from lib/libmcl.so"
-            patchelf --print-needed mclbn256/lib/libmcl.so  # dependency has only standard system dependenciesendency (also likely unused, but changing a link is easier than deleting one)
+            patchelf --print-needed mclbn256/lib/libmcl.so # Dependency has only standard system dependencies (also likely unused, but changing a link is easier than deleting one).
 
             echo "Files linked to from libmclbn256.so"
-            patchelf --print-needed mclbn256/libmclbn256.so  # the BN254 build depends on lib/libmcl.so which may not be in any environment folder
+            patchelf --print-needed mclbn256/libmclbn256.so  # The BN254 build depends on lib/libmcl.so, which may not be in any environment folder.
 
             echo "patching..."
             patchelf --replace-needed lib/libmcl.so \$ORIGIN/lib/libmcl.so mclbn256/libmclbn256.so
 
             echo "Files linked to from libmclbn256.so"
-            patchelf --print-needed mclbn256/libmclbn256.so  # the lib/libmcl.so dependency should be relative now
+            patchelf --print-needed mclbn256/libmclbn256.so  # The lib/libmcl.so dependency should be relative now.
 
             echo "patching..."
             patchelf --replace-needed libmcl.so \$ORIGIN/lib/libmcl.so mclbn256/libmclbn256.so
 
             echo "Files linked to from libmclbn256.so"
-            patchelf --print-needed mclbn256/libmclbn256.so  # the lib/libmcl.so dependency should be relative now
+            patchelf --print-needed mclbn256/libmclbn256.so  # The lib/libmcl.so dependency should be relative now.
 
-            # echo "adding dependency...";#echo "patching..."
-            # patchelf --add-needed \$ORIGIN/lib/libmcl.so mclbn256/libmclbn256.so
-            # # patchelf --add-needed \$ORIGIN/libmcl.so mclbn256/libmclbn256.so
-
-            echo "adding dependency...";#echo "patching..."
+            echo "adding dependency...";
             patchelf --add-needed lib/libmcl.so mclbn256/libmclbn256.so
             patchelf --add-rpath \$ORIGIN/ mclbn256/libmclbn256.so
-            # patchelf --add-rpath . mclbn256/libmclbn256.so
 
             echo "Files linked to from libmclbn256.so"
-            patchelf --print-needed mclbn256/libmclbn256.so  # the lib/libmcl.so dependency should be relative now
+            patchelf --print-needed mclbn256/libmclbn256.so  # The lib/libmcl.so dependency should be relative now.
             mkdir lib; cp mcl-*/lib/libmcl.so lib
       - env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-        name: "Lint and test module (and compiled MCl shared library files)."
+        name: "Test module (and compiled MCl shared library files)."
         run: |
             .venv/bin/python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"
-            #.venv/bin/pip install -U pylint coverage coveralls nose
-            #.venv/bin/python -m pylint mclbn256 # Check against linting rules.
-            #.venv/bin/python mclbn256/mclbn256.py -v # Run doctests.
-            #.venv/bin/python -m nose --cover-erase # Test using nose.
-            #.venv/bin/python -m coveralls --service=github # Submit to coveralls.
     strategy:
       matrix:
         PYTHON:
@@ -124,16 +112,12 @@ jobs:
             cp mcl-*/lib/libmcl.dylib mclbn256/lib
 
             # Allow relative linking of libmcl.dylib dependency (also likely unused, but changing a link is easier than deleting one)
-            otool -L mclbn256/lib/libmcl.dylib  # dependency has only standard system dependencies
-            otool -L mclbn256/libmclbn256.dylib  # the BN254 build depends on lib/libmcl.so which may not be in any environment folder
+            otool -L mclbn256/lib/libmcl.dylib  # Dependency has only standard system dependencies.
+            otool -L mclbn256/libmclbn256.dylib  # The BN254 build depends on lib/libmcl.so which may not be in any environment folder.
             install_name_tool -change lib/libmcl.dylib @loader_path/lib/libmcl.dylib mclbn256/libmclbn256.dylib
-      - name: "Lint and test module (and compiled MCl shared library files)."
+      - name: "Test module (and compiled MCl shared library files)."
         run: |
             venv/bin/python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"
-            # venv/bin/pip install -U pip pylint coverage nose
-            # venv/bin/python -m pylint mclbn256 # Check against linting rules.
-            # venv/bin/python mclbn256/mclbn256.py -v # Run doctests.
-            # venv/bin/python -m nose --cover-erase # Test using nose.
     strategy:
       matrix:
         PYTHON:
@@ -186,17 +170,13 @@ jobs:
             cp mcl-*/lib/libmclbn256.dylib mclbn256
             cp mcl-*/lib/libmcl.dylib mclbn256/lib
 
-            # Allow relative linking of libmcl.dylib dependency (also likely unused, but changing a link is easier than deleting one)
+            # Allow relative linking of libmcl.dylib dependency (also likely unused, but changing a link is easier than deleting one).
             otool -L mclbn256/lib/libmcl.dylib  # dependency has only standard system dependencies
             otool -L mclbn256/libmclbn256.dylib  # the BN254 build depends on lib/libmcl.so which may not be in any environment folder
             install_name_tool -change lib/libmcl.dylib @loader_path/lib/libmcl.dylib mclbn256/libmclbn256.dylib
-      - name: "Lint and test module (and compiled MCl shared library files)."
+      - name: "Test module (and compiled MCl shared library files)."
         run: |
             venv/bin/python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"
-            # venv/bin/pip install -U pip pylint coverage nose
-            # venv/bin/python -m pylint mclbn256 # Check against linting rules.
-            # venv/bin/python mclbn256/mclbn256.py -v # Run doctests.
-            #venv/bin/python -m nose --cover-erase # Test using nose.  # mclbn256 0.2.0 has succeeded before but but errored at end [due to nose in 3.10 bug](https://github.com/nose-devs/nose/issues/1099)
     strategy:
       matrix:
         PYTHON:
@@ -254,28 +234,11 @@ jobs:
           cd mcl-*
           ls
           mklib dll
-          # mk -d test\bls12_test.cpp && bin\bls12_test.exe
           cd ..
         shell: cmd
       - name: Build wheel file.
         run: |
           ls mcl-*/lib/
-          # echo
-          # echo
           ls mcl-*/bin/
-          # echo
-          # echo
           ls mclbn256/
           cp mcl-*/bin/mclbn256.dll mclbn256/libmclbn256.dll
-      - name: Lint and test module (and compiled MCl shared library file).
-        run: |
-          # python -c "import mclbn256; mclbn256.mclbn256.assert_bilinearity(); mclbn256.mclbn256.assert_serializable(); print('pass')"
-          # python -c "exec(\"import mclbn256\n mclbn256.mclbn256.assert_bilinearity()\n mclbn256.mclbn256.assert_serializable()\n print('pass') \")"
-          # (echo "import mclbn256" ; echo "mclbn256.mclbn256.assert_bilinearity()" ; echo "mclbn256.mclbn256.assert_serializable()" ; echo "print('pass')") | python
-          # echo "import mclbn256\nmclbn256.mclbn256.assert_bilinearity()\nmclbn256.mclbn256.assert_serializable()\nprint('pass')" | python
-          # https://github.com/nthparty/mclbn256/actions/runs/6782373143/job/18434469291#step:10:62   Windows is impossible for me to test, because I don't know how to escape the test code in a string.  None of the above will run without a shell-related error.
-          # python -m pip install -U pip pylint coverage nose
-          # python -m pylint mclbn256 # Check against linting rules.
-          # python mclbn256/mclbn256.py -v # Run doctests.
-          # python -m nose --cover-erase # Test using nose.
-
